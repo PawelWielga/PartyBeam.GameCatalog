@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "generatedAt": "2026-09-13T21:00:00Z",
+  "games": [
+    {
+      "gameId": "partybeam.reflex",
+      "publisher": {
+        "id": "partybeam",
+        "displayName": "PartyBeam",
+        "kind": "first-party"
+      },
+      "creator": {
+        "id": "pawelwielga",
+        "displayName": "Paweł Wielga",
+        "kind": "first-party"
+      },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "supportUrl": "https://github.com/PawelWielga/PartyBeam/issues",
+        "locales": {
+          "en": {
+            "title": "Reflex",
+            "summary": "A fast local multiplayer reflex game for PartyBeam."
+          },
+          "pl": {
+            "title": "Reflex",
+            "summary": "Szybka lokalna gra refleksowa dla PartyBeam."
+          }
+        }
+      },
+      "releases": [
+        {
+          "version": "0.1.0",
+          "channel": "stable",
+          "publicationState": "published",
+          "publishedAt": "2026-09-13T20:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.reflex-v0.1.0/partybeam.reflex-0.1.0.partybeam",
+            "fileName": "partybeam.reflex-0.1.0.partybeam",
+            "sizeBytes": 1048576,
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            "signature": {
+              "algorithm": "Ed25519",
+              "keyId": "partybeam-ci-example-key",
+              "valueBase64": "AAAAAAAAAAAAAAAAAAAAAA=="
+            },
+            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": [
+              "tv",
+              "android",
+              "browser"
+            ],
+            "runtimeLocales": [
+              "en",
+              "pl"
+            ],
+            "catalogLocales": [
+              "en",
+              "pl"
+            ],
+            "playerCount": {
+              "min": 2,
+              "max": 8
+            },
+            "controllerTopologies": [
+              "one-phone-per-player"
+            ],
+            "capabilities": {
+              "required": [],
+              "optional": [
+                "haptics"
+              ],
+              "internetAccess": "none"
+            },
+            "standbyResumeSupported": false
+          }
+        },
+        {
+          "version": "0.2.0-beta.1",
+          "channel": "test",
+          "publicationState": "published",
+          "publishedAt": "2026-09-13T21:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.reflex-v0.2.0-beta.1/partybeam.reflex-0.2.0-beta.1.partybeam",
+            "fileName": "partybeam.reflex-0.2.0-beta.1.partybeam",
+            "sizeBytes": 1100000,
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            "signature": {
+              "algorithm": "Ed25519",
+              "keyId": "partybeam-ci-example-key",
+              "valueBase64": "AQEBAQEBAQEBAQEBAQEBAQ=="
+            },
+            "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": [
+              "tv",
+              "android",
+              "browser"
+            ],
+            "runtimeLocales": [
+              "en",
+              "pl"
+            ],
+            "catalogLocales": [
+              "en",
+              "pl"
+            ],
+            "playerCount": {
+              "min": 2,
+              "max": 8
+            },
+            "controllerTopologies": [
+              "one-phone-per-player"
+            ],
+            "capabilities": {
+              "required": [],
+              "optional": [
+                "haptics"
+              ],
+              "internetAccess": "none"
+            },
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    }
+  ]
+}
