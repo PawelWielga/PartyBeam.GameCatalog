@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "games": [
+    {
+      "gameId": "partybeam.reflex",
+      "publisher": {
+        "id": "partybeam",
+        "displayName": "PartyBeam",
+        "kind": "first-party"
+      },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "locales": {
+          "en": {
+            "title": "Reflex",
+            "summary": "Intentionally invalid fixture."
+          }
+        }
+      },
+      "releases": [
+        {
+          "version": "0.2.0-beta.1",
+          "channel": "stable",
+          "publicationState": "published",
+          "publishedAt": "2026-09-13T21:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.reflex-v0.2.0-beta.1/partybeam.reflex-0.2.0-beta.1.partybeam",
+            "fileName": "partybeam.reflex-0.2.0-beta.1.partybeam",
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            "signature": {
+              "algorithm": "Ed25519",
+              "keyId": "partybeam-ci-example-key",
+              "valueBase64": "AQEBAQEBAQEBAQEBAQEBAQ=="
+            },
+            "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": [
+              "tv"
+            ],
+            "runtimeLocales": [
+              "en"
+            ],
+            "catalogLocales": [
+              "en"
+            ],
+            "playerCount": {
+              "min": 2,
+              "max": 8
+            },
+            "controllerTopologies": [
+              "one-phone-per-player"
+            ],
+            "capabilities": {
+              "required": [],
+              "optional": [],
+              "internetAccess": "none"
+            },
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    }
+  ]
+}
