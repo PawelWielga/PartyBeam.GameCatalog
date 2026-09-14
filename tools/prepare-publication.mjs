@@ -6,6 +6,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { generateChannelDocuments } from "./generate-channel-indexes.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 import { validatePackageProjection } from "./validate-package-projection.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
@@ -37,6 +38,10 @@ const TOPOLOGY_BY_MANIFEST = new Map([
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function serializeJson(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
 }
 
 function sha256Bytes(bytes) {
@@ -307,6 +312,16 @@ function mergeRelease(baseCatalog, manifestBytes, manifest, envelope, packagePat
   };
 }
 
+function writeChannelOutputs(outputDir, channelTexts) {
+  if (!outputDir) return;
+
+  const channelsDir = path.join(outputDir, "channels");
+  fs.mkdirSync(channelsDir, { recursive: true });
+  fs.writeFileSync(path.join(outputDir, "channels.json"), channelTexts.discovery, "utf8");
+  fs.writeFileSync(path.join(channelsDir, "stable.json"), channelTexts.stable, "utf8");
+  fs.writeFileSync(path.join(channelsDir, "test.json"), channelTexts.test, "utf8");
+}
+
 export function preparePublication({
   catalogPath,
   manifestPath,
@@ -315,6 +330,7 @@ export function preparePublication({
   publishedAt,
   outputPath,
   provenancePath = `${outputPath}.provenance.json`,
+  channelsOutputDir = null,
   trustStorePath = DEFAULT_TRUST_STORE_PATH,
   overwrite = false,
 }) {
@@ -369,7 +385,7 @@ export function preparePublication({
     publishedAt,
   );
 
-  const candidateText = `${JSON.stringify(prepared.candidate, null, 2)}\n`;
+  const candidateText = serializeJson(prepared.candidate);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-publication-"));
   const tempCatalogPath = path.join(tempDir, "catalog.json");
 
@@ -396,6 +412,13 @@ export function preparePublication({
       throw new Error(`Publication candidate failed validation:\n${formatValidationErrors(allErrors)}`);
     }
 
+    const channelDocuments = generateChannelDocuments(prepared.candidate);
+    const channelTexts = {
+      discovery: serializeJson(channelDocuments.discovery),
+      stable: serializeJson(channelDocuments.stable),
+      test: serializeJson(channelDocuments.test),
+    };
+
     const provenance = {
       schemaVersion: 1,
       gameId: manifest.gameId,
@@ -407,6 +430,11 @@ export function preparePublication({
       baselineCatalogSha256: sha256Bytes(baseCatalogBytes),
       candidateCatalogSha256: sha256Bytes(Buffer.from(candidateText, "utf8")),
       trustStoreSha256: sha256Bytes(trustStoreBytes),
+      channelIndexes: {
+        discoverySha256: sha256Bytes(Buffer.from(channelTexts.discovery, "utf8")),
+        stableSha256: sha256Bytes(Buffer.from(channelTexts.stable, "utf8")),
+        testSha256: sha256Bytes(Buffer.from(channelTexts.test, "utf8")),
+      },
       releaseAsset: {
         fileName: prepared.release.package.fileName,
         sizeBytes: prepared.release.package.sizeBytes,
@@ -431,9 +459,14 @@ export function preparePublication({
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.mkdirSync(path.dirname(provenancePath), { recursive: true });
     fs.writeFileSync(outputPath, candidateText, "utf8");
-    fs.writeFileSync(provenancePath, `${JSON.stringify(provenance, null, 2)}\n`, "utf8");
+    fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");
+    writeChannelOutputs(channelsOutputDir, channelTexts);
 
-    return { candidate: prepared.candidate, provenance };
+    return {
+      candidate: prepared.candidate,
+      provenance,
+      channelDocuments,
+    };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
@@ -454,6 +487,7 @@ function parseArgs(argv) {
     else if (value === "--published-at") options.publishedAt = argv[++index];
     else if (value === "--output") options.outputPath = path.resolve(argv[++index]);
     else if (value === "--provenance") options.provenancePath = path.resolve(argv[++index]);
+    else if (value === "--channels-output-dir") options.channelsOutputDir = path.resolve(argv[++index]);
     else if (value === "--trust-store") options.trustStorePath = path.resolve(argv[++index]);
     else if (value === "--force") options.overwrite = true;
     else throw new Error(`Unknown argument: ${value}`);
