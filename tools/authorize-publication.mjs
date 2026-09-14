@@ -6,6 +6,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { generateChannelDocuments } from "./generate-channel-indexes.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
+import { validatePublicationProvenanceObject } from "./publication-provenance.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
 import {
   DEFAULT_TRUST_STORE_PATH,
@@ -96,16 +97,15 @@ export function authorizePublication({
   if (errors.length > 0) return errors;
 
   const provenance = readJson(provenancePath);
-  const catalog = readJson(catalogPath);
-
-  if (provenance.cryptographicSignatureVerified !== true) {
-    errors.push(
-      issue(
-        "cryptographic-signature-verification-required",
-        "publication provenance must record successful trusted-key cryptographic signature verification",
-      ),
+  const provenanceErrors = validatePublicationProvenanceObject(provenance);
+  if (provenanceErrors.length > 0) {
+    return provenanceErrors.map((error) =>
+      issue(error.code, `${error.instancePath}: ${error.message}`),
     );
   }
+
+  const catalog = readJson(catalogPath);
+
   if (provenance.componentPayloadsVerified !== true) {
     errors.push(
       issue(
@@ -209,7 +209,7 @@ export function authorizePublication({
       trustStorePath,
     });
     for (const error of signatureErrors) {
-      errors.push(issue(`signature-${error.code}`, error.message));
+      errors.push(issue(error.code, error.message));
     }
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
