@@ -1,14 +1,14 @@
 # PartyBeam official catalog contract v1
 
-This document defines the semantics of `schemas/v1/catalog.schema.json` and the invariants that PartyBeam publication tooling must enforce.
+This document defines the semantics of `schemas/v1/catalog.schema.json` and the invariants PartyBeam publication tooling must enforce.
 
 ## Status
 
-The v1 catalog shape is the initial implementation for issue #2.
+Catalog v1 is aligned with the signed game-package v1 contract currently implemented in `PawelWielga/PartyBeam` draft PR #19 (`feature/02-game-package-manifest`). The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
 
-`PawelWielga/PartyBeam#4` still owns the final signed package manifest contract. Until that issue is complete, the catalog's `compatibility` object is deliberately treated as a **catalog projection** of package-manifest truth. Final field naming and signature metadata must be aligned with the completed package contract before issue #2 is considered fully frozen.
+PartyBeam remains authoritative for the package format and cryptographic verification. Until PR #19 is merged, GameCatalog treats the mapping as implemented but not finally frozen. Any upstream contract change must refresh the pinned schemas and projection fixtures before publication tooling is considered synchronized.
 
-The catalog must never be used to weaken or override a signed package manifest.
+The catalog must never weaken or override a signed package manifest.
 
 ## Document identity
 
@@ -19,7 +19,7 @@ A catalog document contains:
 - optional `generatedAt` informational timestamp;
 - `games`: official catalog entries.
 
-Incompatible catalog changes require a new versioned schema/path. Existing v1 documents must not silently acquire incompatible meaning.
+Incompatible catalog changes require a new versioned schema/path. Existing v1 documents must not silently acquire incompatible meaning after the contract is frozen.
 
 ## Game identity
 
@@ -27,136 +27,176 @@ Incompatible catalog changes require a new versioned schema/path. Existing v1 do
 
 Changing title, artwork, supported languages or publisher display text does not create a new game identity. A new unrelated title must not reuse an existing `gameId`.
 
-`publisher.id` is explicit and stable. The MVP publication policy accepts only approved first-party releases, but the schema can represent an `approved-external` publisher later without redefining release identity.
+`publisher.id` and `publisher.displayName` are projected from the signed manifest. `publisher.kind` is catalog admission policy metadata and is deliberately not controlled by the package itself. MVP publication accepts only `first-party`; the schema can represent `approved-external` later without redefining release identity.
 
-`creator` is optional and can be used when the creator identity is useful separately from the publication identity.
+`creator` remains optional catalog metadata when a separate creator identity is useful.
 
 ## Catalog metadata
 
-`catalogMetadata` contains discovery/presentation metadata rather than runtime authority.
+`catalogMetadata` contains discovery/presentation data.
 
-- `defaultLocale` selects the fallback catalog locale.
-- `locales` contains localized title/summary and optional public HTTPS references.
-- `supportUrl` is an optional public support/help destination.
+- `defaultLocale` selects the preferred catalog fallback;
+- `locales` contains localized title/summary plus optional official presentation references;
+- `supportUrl` mirrors the signed manifest support destination when one is declared.
 
-The default locale must exist in `locales`. This cross-field invariant is enforced by the publication validator rather than JSON Schema alone.
+For signed package v1, English (`en`) is required as the terminal catalog fallback. Publication validation checks that catalog locales agree with the signed manifest and that catalog summaries/titles do not contradict signed author metadata.
 
-Age rating, monetization and advertising metadata are intentionally outside the MVP contract.
+Age rating, monetization and advertising metadata remain outside the MVP contract.
 
 ## Exact releases
 
-Every release is identified by the tuple:
+Every release is identified by:
 
 ```text
 (gameId, version)
 ```
 
-`version` is SemVer 2.0.0. The tuple is immutable after publication: once PartyBeam trusts bytes for an exact release identity, different bytes must not later appear under that same identity.
+`version` is SemVer 2.0.0. The tuple is immutable after publication: different package bytes, logical package identity, signature identity or compatibility facts must not later replace an already published exact release.
 
-A game may contain multiple releases simultaneously. The canonical valid fixture demonstrates both stable and prerelease history for one `gameId`.
+A game may contain multiple releases simultaneously.
 
 ### Channel classification
 
-`channel` classifies the exact release:
+- `stable`: SemVer without a prerelease suffix;
+- `test`: official SemVer prerelease.
 
-- `stable`: a SemVer without a prerelease suffix;
-- `test`: an official SemVer prerelease.
-
-Channel indexes are implemented separately in issue #5. They must be derivable from exact release records and must not create a second contradictory release identity.
+Channel indexes are implemented separately. They are derived from exact release records and must not create a second release identity.
 
 ### Publication state
 
 `publicationState` is either:
 
-- `published`: eligible for normal discovery according to its channel;
+- `published`: eligible for normal discovery according to channel;
 - `delisted`: retained as historical/auditable metadata but excluded from normal new discovery.
 
-Delisting is a distribution state only. It is not a remote revocation instruction and must not invalidate an already verified compatible local package merely because the online catalog no longer offers it.
+Delisting is a distribution state only. It does not invalidate or delete an already verified compatible local package.
 
-## Package resolution
+## Package resolution and integrity layers
 
-`package` resolves one exact public compiled asset:
+`package` resolves one exact public `.partybeam` GitHub Release asset and carries two deliberately separate integrity layers.
 
-- `assetUrl`: HTTPS GitHub Release asset in `PartyBeam.GameCatalog`;
-- `fileName`: expected `.partybeam` package name;
-- optional `sizeBytes`: useful for download/storage UX;
-- `integrity`: package hash, currently SHA-256;
-- `signature`: signature algorithm identifier, trusted key identifier and encoded signature value;
-- `manifestSha256`: SHA-256 of the authoritative package manifest representation selected by the package contract.
+### Downloaded asset integrity
 
-Catalog signature fields are transport/discovery metadata required so a client can obtain verification inputs. They do not replace verification of the package itself.
+- `assetUrl`: public HTTPS GitHub Release asset in `PartyBeam.GameCatalog`;
+- `fileName`: expected `.partybeam` filename;
+- optional `sizeBytes`;
+- `integrity.algorithm`: `SHA-256`;
+- `integrity.digest`: SHA-256 of the exact downloadable asset bytes.
 
-The concrete package-signing representation remains subject to final alignment with `PartyBeam#4`. Publication validation must fail closed when the catalog's integrity/authenticity metadata disagrees with the package.
+This protects transport/download integrity for the physical release asset.
+
+### Signed logical package identity
+
+PartyBeam package v1 uses detached `signature.json` metadata. GameCatalog mirrors it unchanged:
+
+- `manifestSha256`: SHA-256 of the exact `manifest.json` bytes;
+- `packageSha256`: SHA-256 of PartyBeam's deterministic logical package-content descriptor;
+- `signature.algorithm`: `ecdsa-p256-sha256-p1363`;
+- `signature.keyId`: trusted signing-key identifier;
+- `signature.valueBase64`: 64-byte IEEE P1363 ECDSA signature encoded as canonical Base64.
+
+The logical `packageSha256` is intentionally not the same concept as the `.partybeam` asset-byte hash. PartyBeam signs logical release contents independently of container repacking, while the catalog also pins the exact bytes users download.
+
+See `docs/package-contract-alignment.md` for the field mapping and descriptor rules.
 
 ## Compatibility projection
 
-`compatibility` exists so PartyBeam can perform catalog discovery/filtering before downloading a complete package. It mirrors selected signed manifest facts:
+`compatibility` allows PartyBeam to perform discovery/filtering before fully preparing a package. The signed manifest remains authoritative.
 
-- supported Game Contract API range;
-- available surfaces (`tv`, `android`, `browser`);
-- runtime locales and catalog locales;
-- min/max player count;
-- supported controller topology;
-- required/optional capability summary;
-- Internet access requirement summary;
+The projection mirrors:
+
+- Game Contract range;
+- available component surfaces;
+- runtime locales common to the complete release;
+- catalog locales;
+- player range;
+- controller topology;
+- required/optional capability lists;
+- derived Internet-access requirement;
 - standby/resume support.
 
-The signed manifest remains authoritative. A publication pipeline must reject a release if this projection disagrees with the corresponding signed manifest fields.
+Manifest component kinds are normalized to catalog surface names:
 
-The catalog intentionally stores only an Internet-access summary. Exact WAN endpoint/origin allowlists remain package-manifest/runtime-security data and must not be broadened by catalog metadata.
+- `tv` -> `tv`;
+- `androidController` -> `android`;
+- `browserController` -> `browser`.
 
-## Validation invariants beyond JSON Schema
+Manifest controller topology values are normalized as:
 
-Issue #3 must implement deterministic checks for invariants that JSON Schema cannot safely express on its own:
+- `onePhonePerPlayer` -> `one-phone-per-player`;
+- `sharedPhone` -> `shared-phone`.
 
-1. `gameId` values are unique within a catalog.
-2. `(gameId, version)` release identity is unique.
-3. an existing exact release cannot change package bytes/hash/signature identity.
-4. `catalogMetadata.defaultLocale` exists in `catalogMetadata.locales`.
-5. `playerCount.min <= playerCount.max`.
-6. required and optional capability names do not conflict.
-7. catalog compatibility projection matches the authoritative signed package manifest.
-8. `assetUrl` is a public GitHub Release asset owned by this distribution repository.
-9. referenced package bytes hash to `package.integrity.digest` when bytes are available.
-10. signature metadata is valid and the package signature verifies against an approved publisher key.
-11. stable/test classification agrees with SemVer prerelease semantics.
-12. only publisher identities allowed by current official-catalog policy may be newly published.
+`compatibility.capabilities.internetAccess` is derived from the signed capability lists. The exact signed WAN `network.outboundAllowlist` remains package/runtime-security data and is not duplicated into the public discovery projection.
 
-Validation must fail closed. A malformed or unverifiable release must never become discoverable merely because a JSON file parsed successfully.
+## Validation invariants
+
+Publication validation fails closed and currently enforces at least:
+
+1. catalog JSON Schema validity;
+2. unique `gameId` values;
+3. unique `(gameId, version)` identities;
+4. immutable package and compatibility metadata for existing exact releases;
+5. valid stable/test SemVer classification;
+6. `gameContractApi.minInclusive < gameContractApi.maxExclusive`;
+7. `playerCount.min <= playerCount.max`;
+8. English runtime/catalog fallback required by signed manifest v1;
+9. no capability may be both required and optional;
+10. derived `internetAccess` summary must agree with required/optional capability declarations;
+11. catalog locale declarations must have matching catalog metadata;
+12. package URLs must be public GitHub Release assets owned by this distribution repository;
+13. actual `.partybeam` bytes must match `package.integrity.digest` and `sizeBytes` when supplied;
+14. `manifest.json` and `signature.json` must pass the pinned upstream PartyBeam v1 schemas;
+15. exact manifest bytes must hash to both envelope and catalog `manifestSha256`;
+16. PartyBeam's deterministic logical descriptor must hash to both envelope and catalog `packageSha256`;
+17. signature algorithm/key/value metadata must match the detached envelope;
+18. game, version and publisher identity must agree with the manifest;
+19. Game Contract, players, topology, surfaces, locales, capabilities and standby/resume projection must agree with the manifest;
+20. localized title/summary and support URL projection must agree with signed package metadata;
+21. every manifest component `releaseVersion` must equal the exact package version;
+22. only publisher identities admitted by current official-catalog policy may be newly published.
+
+Cryptographic ECDSA verification against the production trusted-key registry remains owned by PartyBeam's canonical package verifier. Once upstream PR #19 is merged and available to publication tooling, GameCatalog should share/invoke that verifier rather than maintain a second independent cryptographic implementation.
 
 ## Public URL stability
 
-The canonical v1 catalog is:
+Canonical v1 catalog:
 
 ```text
 https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/catalog/v1/catalog.json
 ```
 
-The v1 schema is:
+Canonical v1 schema:
 
 ```text
 https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/schemas/v1/catalog.schema.json
 ```
 
-PartyBeam clients must not need a GitHub token, private-repository credential or publisher secret to read catalog data or download public package assets.
+PartyBeam clients must not need GitHub tokens, private-repository credentials or publisher secrets to read catalog data or download public package assets.
 
 ## Fixtures
 
-Canonical fixtures live under `fixtures/v1/`:
+Fixtures live under `fixtures/v1/`:
 
-- `valid/multiple-releases.json`: one game with a stable release and a test prerelease;
-- `invalid/stable-prerelease.json`: prerelease incorrectly classified as stable;
-- `invalid/missing-signature.json`: package publication without required authenticity metadata.
+- `valid/`: structurally and semantically valid catalog examples;
+- `invalid/`: catalog-shape/semantic rejection examples;
+- `assets/` + `integrity/`: physical package-byte hash fixtures;
+- `package-contract/`: signed-manifest/signature-envelope projection fixtures, including valid mapping, deliberate catalog disagreement, malformed manifest and invalid signature metadata.
 
-Issue #3 expands this suite with tampering, duplicate identity, bad destination, hash mismatch and manifest disagreement cases.
+The local test suite also creates in-memory mutations for immutable release identity, external-publisher policy, Game Contract ordering, English fallback and Internet-access summary consistency.
+
+## CI policy
+
+GitHub Actions are intentionally disabled until the planned self-hosted runner is configured. Validation is implemented as deterministic repository scripts and is run through `npm test`, `npm run validate`, `npm run verify-package` and `npm run validate-package-projection`.
+
+See `docs/ci-policy.md`.
 
 ## Relationship to PartyBeam product policy
 
-This contract follows PartyBeam's existing rules:
+This contract follows PartyBeam's current rules:
 
-- the official catalog is the only MVP game publication source;
+- the official catalog is the only MVP publication source;
 - Developer/Test mode is not a trust bypass;
-- Game Contract compatibility is independently versioned from PartyBeam app version;
-- all components used in one GameSession belong to one exact game release;
-- package authenticity does not grant native privileges or unrestricted device/network access;
+- Game Contract compatibility is independently versioned from the PartyBeam app;
+- all components in one GameSession belong to one exact game release;
+- authenticity does not grant native privileges, unrestricted filesystem/network access, entitlement or DRM rights;
 - delisting does not imply remote deletion or revocation of an already prepared valid package.
