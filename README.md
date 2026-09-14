@@ -14,6 +14,7 @@ This repository owns:
 - public package asset locations;
 - transport integrity metadata for downloadable `.partybeam` assets;
 - the signed manifest/package hash and signature-envelope projection needed by publication tooling;
+- the public publisher signing-key trust store used by publication validation;
 - publication and delisting state.
 
 This repository does **not** own:
@@ -22,6 +23,7 @@ This repository does **not** own:
 - game source code or gameplay logic;
 - arbitrary community feeds or sideloading;
 - accounts, entitlements, purchases or DRM;
+- signing private keys;
 - the authoritative package-internal manifest contract.
 
 The signed package manifest remains authoritative for package-internal declarations. Catalog compatibility fields are a discovery/filtering projection and publication validation must reject disagreement with the signed manifest.
@@ -35,7 +37,12 @@ catalog/
 schemas/
   v1/
     catalog.schema.json
+    publication-provenance.schema.json
+    publisher-trust-store.schema.json
   upstream/partybeam/v1/
+trust/
+  v1/
+    publisher-keys.json
 fixtures/
   v1/
     assets/
@@ -46,6 +53,7 @@ fixtures/
 docs/
   catalog-contract-v1.md
   package-contract-alignment.md
+  publisher-trust-store.md
   publication-workflow.md
   ci-policy.md
 tools/
@@ -54,8 +62,10 @@ tools/
   validate-catalog-semantics.mjs
   validate-fixtures.mjs
   validate-package-projection.mjs
+  validate-package-signature.mjs
   validate-publication-preparation.mjs
   verify-package-integrity.mjs
+  verify-package-signature.mjs
 ```
 
 `catalog/v1/catalog.json` is the canonical v1 catalog document. Future incompatible catalog contracts must use a new versioned path rather than changing frozen v1 semantics in place.
@@ -92,7 +102,9 @@ The catalog stores those values unchanged for one exact release. Separately, `pa
 
 This distinction is intentional: PartyBeam signs logical package contents independently of ZIP/container layout, while the catalog must also verify the exact bytes fetched from GitHub.
 
-See `docs/package-contract-alignment.md` for the field-by-field mapping.
+Publication additionally binds each trusted `keyId` to an explicit `publisherId` through `trust/v1/publisher-keys.json`. The committed production trust store is intentionally empty until the first real PartyBeam production public signing key exists, so real publication currently fails closed.
+
+See `docs/package-contract-alignment.md` and `docs/publisher-trust-store.md`.
 
 ## Validation
 
@@ -125,6 +137,15 @@ npm run verify-package -- \
   --package path/to/partybeam.example-1.2.3.partybeam
 ```
 
+Verify the detached ECDSA P-256 signature against an explicitly trusted publisher key:
+
+```bash
+npm run verify-package-signature -- \
+  --signature path/to/signature.json \
+  --publisher partybeam \
+  --trust-store trust/v1/publisher-keys.json
+```
+
 Validate catalog metadata against a signed package manifest and detached signature envelope:
 
 ```bash
@@ -149,17 +170,18 @@ The validation layer covers:
 - immutable package and compatibility metadata for an already known `(gameId, version)`;
 - physical release-asset SHA-256 and size when package bytes are supplied;
 - exact manifest SHA-256 and PartyBeam logical package SHA-256;
-- ECDSA P-256 signature metadata shape and equality with the detached envelope;
+- ECDSA P-256/P1363 signature shape and cryptographic verification over the prehashed logical `packageSha256`;
+- trusted `keyId` → `publisherId` binding and active-key policy for new publication;
 - game/release/publisher identity agreement;
 - Game Contract, player, controller, surface, locale, capability and standby/resume projection agreement;
 - localized catalog metadata/support URL agreement with the signed manifest;
 - first-party-only MVP publication policy while retaining schema support for future approved external publishers.
 
-Cryptographic ECDSA verification against the production trusted-key store remains owned by PartyBeam's canonical package verifier while PR #19 is still draft. This repository must share/invoke that verified implementation once available rather than invent a second crypto contract.
+Publication-side signature verification uses `@noble/curves` P-256 with `prehash: false` because PartyBeam's .NET contract signs the already-computed `packageSha256` via `ECDsa.SignHash`. Full package verification still belongs to PartyBeam's canonical `GamePackageVerifier`, which additionally validates the actual component payload bytes.
 
 ## Publication preparation
 
-Issue #4 now has a deterministic local preparation path. It generates a reviewable catalog candidate and provenance record without mutating GitHub:
+Issue #4 has a deterministic local preparation path. It generates a reviewable catalog candidate and provenance record without mutating GitHub:
 
 ```bash
 npm run prepare-publication -- \
@@ -167,14 +189,15 @@ npm run prepare-publication -- \
   --manifest /path/to/manifest.json \
   --signature /path/to/signature.json \
   --package /path/to/<gameId>-<version>.partybeam \
+  --trust-store trust/v1/publisher-keys.json \
   --published-at 2026-09-14T08:00:00Z \
   --output /tmp/catalog.candidate.json \
   --provenance /tmp/publication.provenance.json
 ```
 
-Preparation derives the channel, Release tag/URL, asset hash/size, catalog metadata and compatibility projection from signed package inputs, then runs all currently available catalog/package consistency gates. Reusing an existing exact game/version is rejected.
+Preparation derives the channel, Release tag/URL, asset hash/size, catalog metadata and compatibility projection from signed package inputs, verifies the signature against an active publisher key, then runs all currently available catalog/package consistency gates. Reusing an existing exact game/version is rejected.
 
-The generated provenance deliberately says `cryptographicSignatureVerified: false`. **It is not permission to publish.** Public GitHub Release creation remains blocked until PartyBeam's canonical trusted-key verifier is integrated.
+The generated provenance records `cryptographicSignatureVerified: true`, but also records `componentPayloadsVerified: false` and `fullPackageVerification: false`. That distinction is deliberate: until GameCatalog can invoke PartyBeam's canonical package verifier against extracted component bytes, **the candidate is still not authorization to create the public GitHub Release**.
 
 See `docs/publication-workflow.md`.
 
