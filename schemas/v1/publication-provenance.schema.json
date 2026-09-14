@@ -14,12 +14,15 @@
     "publishedAt",
     "baselineCatalogSha256",
     "candidateCatalogSha256",
+    "trustStoreSha256",
     "releaseAsset",
     "manifestSha256",
     "packageSha256",
     "signature",
     "partyBeamPackageContract",
     "cryptographicSignatureVerified",
+    "componentPayloadsVerified",
+    "fullPackageVerification",
     "cryptographicVerificationNote"
   ],
   "properties": {
@@ -40,6 +43,7 @@
     "publishedAt": { "type": "string", "format": "date-time" },
     "baselineCatalogSha256": { "$ref": "#/$defs/sha256" },
     "candidateCatalogSha256": { "$ref": "#/$defs/sha256" },
+    "trustStoreSha256": { "$ref": "#/$defs/sha256" },
     "releaseAsset": {
       "type": "object",
       "additionalProperties": false,
@@ -72,7 +76,9 @@
         "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
       }
     },
-    "cryptographicSignatureVerified": { "type": "boolean" },
+    "cryptographicSignatureVerified": { "const": true },
+    "componentPayloadsVerified": { "type": "boolean" },
+    "fullPackageVerification": { "type": "boolean" },
     "cryptographicVerificationNote": { "type": "string", "minLength": 1 }
   },
   "$defs": {
