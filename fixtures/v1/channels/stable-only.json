@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "games": [
+    {
+      "gameId": "partybeam.stable-only",
+      "publisher": { "id": "partybeam", "displayName": "PartyBeam", "kind": "first-party" },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "locales": { "en": { "title": "Stable Only", "summary": "Stable-only channel fixture." } }
+      },
+      "releases": [
+        {
+          "version": "1.9.0",
+          "channel": "stable",
+          "publicationState": "published",
+          "publishedAt": "2026-09-14T08:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.stable-only-v1.9.0/partybeam.stable-only-1.9.0.partybeam",
+            "fileName": "partybeam.stable-only-1.9.0.partybeam",
+            "integrity": { "algorithm": "SHA-256", "digest": "1111111111111111111111111111111111111111111111111111111111111111" },
+            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "packageSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "signature": { "algorithm": "ecdsa-p256-sha256-p1363", "keyId": "fixture-key", "valueBase64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==" }
+          },
+          "compatibility": {
+            "gameContractApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en"],
+            "catalogLocales": ["en"],
+            "playerCount": { "min": 1, "max": 8 },
+            "controllerTopologies": ["one-phone-per-player"],
+            "capabilities": { "required": [], "optional": [], "internetAccess": "none" },
+            "standbyResumeSupported": false
+          }
+        },
+        {
+          "version": "1.10.0",
+          "channel": "stable",
+          "publicationState": "published",
+          "publishedAt": "2026-09-14T09:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.stable-only-v1.10.0/partybeam.stable-only-1.10.0.partybeam",
+            "fileName": "partybeam.stable-only-1.10.0.partybeam",
+            "integrity": { "algorithm": "SHA-256", "digest": "2222222222222222222222222222222222222222222222222222222222222222" },
+            "manifestSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "packageSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "signature": { "algorithm": "ecdsa-p256-sha256-p1363", "keyId": "fixture-key", "valueBase64": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ==" }
+          },
+          "compatibility": {
+            "gameContractApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en"],
+            "catalogLocales": ["en"],
+            "playerCount": { "min": 1, "max": 8 },
+            "controllerTopologies": ["one-phone-per-player"],
+            "capabilities": { "required": [], "optional": [], "internetAccess": "none" },
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    }
+  ]
+}
