@@ -6,7 +6,7 @@ This document describes the intended publication path for official PartyBeam gam
 
 The repository currently implements the **deterministic preparation and validation** half of publication.
 
-`tools/prepare-publication.mjs` creates reviewable publication outputs but never uploads anything. Before it writes a candidate, it now requires the detached ECDSA P-256 signature to verify against an `active` publisher key from `trust/v1/publisher-keys.json`.
+`tools/prepare-publication.mjs` creates reviewable publication outputs but never uploads anything. Before it writes a candidate, it requires the detached ECDSA P-256 signature to verify against an `active` publisher key from `trust/v1/publisher-keys.json`.
 
 The committed production trust store is intentionally empty until a real PartyBeam production public signing key is provisioned, so production publication currently fails closed.
 
@@ -70,7 +70,7 @@ The publication-side signature gate and the canonical verifier should agree on t
 
 Until this step is wired into GameCatalog, no public Release mutation command is provided.
 
-### 4. Prepare a catalog candidate
+### 4. Prepare catalog and channel candidates
 
 From a clean GameCatalog checkout:
 
@@ -86,6 +86,7 @@ npm run prepare-publication -- \
   --trust-store trust/v1/publisher-keys.json \
   --published-at 2026-09-14T08:00:00Z \
   --output /tmp/catalog.candidate.json \
+  --channels-output-dir /tmp/catalog-v1-candidate \
   --provenance /tmp/publication.provenance.json
 ```
 
@@ -104,7 +105,8 @@ The command:
 - validates the physical package file against the generated catalog entry;
 - validates immutable existing releases against the baseline catalog;
 - refuses to add an already existing `(gameId, version)`;
-- writes an audit/provenance JSON file.
+- deterministically generates `channels.json`, `channels/stable.json` and `channels/test.json` from the candidate catalog;
+- writes an audit/provenance JSON file binding SHA-256 hashes of all candidate documents.
 
 No GitHub mutation occurs in this phase.
 
@@ -116,6 +118,7 @@ The generated provenance includes:
 - deterministic Release tag and asset URL;
 - baseline and candidate catalog SHA-256;
 - exact trust-store SHA-256 used for authorization;
+- SHA-256 of channel discovery, stable and test candidate documents;
 - physical release asset filename, size and SHA-256;
 - exact manifest hash;
 - logical PartyBeam package hash;
@@ -146,7 +149,7 @@ After full PartyBeam package verification is integrated, the trusted publication
 4. create `game-<gameId>-v<version>` in `PartyBeam.GameCatalog`;
 5. upload exactly one immutable `<gameId>-<version>.partybeam` asset;
 6. confirm the public asset can be fetched anonymously and its bytes match the prepared SHA-256/size;
-7. submit the generated catalog candidate as a reviewed repository change;
+7. submit the generated catalog and channel candidates as one reviewed repository change;
 8. rerun all local validation against the final public asset and baseline catalog;
 9. only then make the release discoverable through the canonical catalog/channel indexes.
 
