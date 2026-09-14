@@ -4,13 +4,15 @@ This document describes the intended publication path for official PartyBeam gam
 
 ## Current implementation status
 
-The repository currently implements the **deterministic preparation and validation** half of publication.
+The repository currently implements deterministic publication preparation plus a fail-closed final authorization precheck.
 
 `tools/prepare-publication.mjs` creates reviewable publication outputs but never uploads anything. Before it writes a candidate, it requires the detached ECDSA P-256 signature to verify against an `active` publisher key from `trust/v1/publisher-keys.json`.
 
+`tools/authorize-publication.mjs` is a separate final gate intended to run immediately before any future GitHub Release mutation. It independently rechecks the candidate catalog, immutable baseline, package bytes, publisher signature/trust state and channel projections. It has no force/bypass option.
+
 The committed production trust store is intentionally empty until a real PartyBeam production public signing key is provisioned, so production publication currently fails closed.
 
-The remaining blocker to a real GitHub Release mutation is full verification of the actual component payload bytes using PartyBeam's canonical `GamePackageVerifier`. PartyBeam PR #19 defines that verifier, but the `.partybeam` container/extraction path is not yet integrated here.
+The remaining blocker to a real GitHub Release mutation is full verification of the actual component payload bytes using PartyBeam's canonical `GamePackageVerifier`. PartyBeam PR #19 defines that verifier, but the canonical `.partybeam` container/extraction path is not yet integrated with the publication tooling.
 
 ## Trust and credential boundary
 
@@ -68,6 +70,8 @@ Before public upload, PartyBeam's canonical `GamePackageVerifier` must additiona
 
 The publication-side signature gate and the canonical verifier should agree on trust/key material. The canonical verifier remains authoritative for the complete package because it receives actual component payload bytes.
 
+The integration that invokes this verifier must be the only code allowed to mark both `componentPayloadsVerified` and `fullPackageVerification` as `true`. Hand-editing those flags is not a supported workflow and does not replace the independent authorization checks below.
+
 Until this step is wired into GameCatalog, no public Release mutation command is provided.
 
 ### 4. Prepare catalog and channel candidates
@@ -110,6 +114,36 @@ The command:
 
 No GitHub mutation occurs in this phase.
 
+### 5. Final publication authorization precheck
+
+After canonical full-package verification has produced provenance with both full-verification flags set to `true`, run:
+
+```bash
+npm run authorize-publication -- \
+  --catalog /tmp/catalog.candidate.json \
+  --baseline catalog/v1/catalog.json \
+  --provenance /tmp/publication.provenance.json \
+  --channels-dir /tmp/catalog-v1-candidate \
+  --package /path/to/<gameId>-<version>.partybeam \
+  --trust-store trust/v1/publisher-keys.json
+```
+
+This command independently verifies:
+
+- `componentPayloadsVerified === true`;
+- `fullPackageVerification === true`;
+- exact SHA-256 of baseline catalog, candidate catalog and trust store;
+- immutable candidate-vs-baseline rules;
+- exact package filename, byte size and transport SHA-256;
+- publisher/key binding and ECDSA signature from the candidate release itself;
+- deterministic Release tag and public asset URL;
+- exact release identity recorded in provenance;
+- SHA-256 and exact deterministic contents of discovery/stable/test channel documents.
+
+A prepared candidate currently fails this gate by design because its full component verification flags are false. Manually flipping those flags is insufficient to bypass the gate because signature/trust, package bytes, candidate hashes and channel projections are independently recomputed.
+
+The command has no `--force` or ignore-verification mode.
+
 ## Provenance record
 
 The generated provenance includes:
@@ -127,7 +161,7 @@ The generated provenance includes:
 - the requested publication timestamp;
 - explicit verification-state flags.
 
-A successfully prepared candidate records:
+A freshly prepared candidate records:
 
 ```json
 {
@@ -137,21 +171,24 @@ A successfully prepared candidate records:
 }
 ```
 
-This is intentionally precise. The publisher signature has been cryptographically verified, but the actual component payloads inside the `.partybeam` container have not yet been independently re-read and checked by GameCatalog. Therefore the provenance is still **not authorization to publish**.
+This is intentionally precise. The publisher signature has been cryptographically verified, but the actual component payloads inside the `.partybeam` container have not yet been independently re-read and checked by the canonical PartyBeam verifier. Therefore the provenance is still **not authorization to publish**.
+
+The provenance file is audit evidence, not a cryptographic authorization token by itself. Trusted publication tooling must run the final authorization precheck against the actual candidate files and package bytes immediately before mutation.
 
 ## Future GitHub mutation phase
 
 After full PartyBeam package verification is integrated, the trusted publication workflow can add the mutation phase:
 
 1. verify the complete package with the canonical PartyBeam verifier;
-2. require provenance with `fullPackageVerification: true`;
-3. confirm the target Release tag does not already exist;
-4. create `game-<gameId>-v<version>` in `PartyBeam.GameCatalog`;
-5. upload exactly one immutable `<gameId>-<version>.partybeam` asset;
-6. confirm the public asset can be fetched anonymously and its bytes match the prepared SHA-256/size;
-7. submit the generated catalog and channel candidates as one reviewed repository change;
-8. rerun all local validation against the final public asset and baseline catalog;
-9. only then make the release discoverable through the canonical catalog/channel indexes.
+2. produce/update provenance only from that successful verifier result;
+3. run `npm run authorize-publication` and require success;
+4. confirm the target Release tag does not already exist;
+5. create `game-<gameId>-v<version>` in `PartyBeam.GameCatalog`;
+6. upload exactly one immutable `<gameId>-<version>.partybeam` asset;
+7. confirm the public asset can be fetched anonymously and its bytes match the prepared SHA-256/size;
+8. submit the generated catalog and channel candidates as one reviewed repository change;
+9. rerun all local validation against the final public asset and baseline catalog;
+10. only then make the release discoverable through the canonical catalog/channel indexes.
 
 If any step fails, publication must stop. A failed or partial attempt must never be papered over by changing bytes behind the same exact version.
 
