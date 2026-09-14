@@ -3,11 +3,23 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 import { validatePackageProjection } from "./validate-package-projection.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
 
+const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(TOOL_DIR, "..");
+const UPSTREAM_SOURCE_PATH = path.join(
+  REPO_ROOT,
+  "schemas/upstream/partybeam/v1/source.json",
+);
+const PROVENANCE_SCHEMA_PATH = path.join(
+  REPO_ROOT,
+  "schemas/v1/publication-provenance.schema.json",
+);
 const SIGNATURE_ALGORITHM = "ecdsa-p256-sha256-p1363";
 const SURFACE_BY_COMPONENT_KIND = new Map([
   ["tv", "tv"],
@@ -195,7 +207,21 @@ function validateEnvelopeAgainstManifest(manifestBytes, manifest, envelope) {
   return { manifestSha256, packageSha256 };
 }
 
-function mergeRelease(baseCatalog, manifest, envelope, packagePath, publishedAt) {
+function validateProvenance(provenance) {
+  const schema = readJson(PROVENANCE_SCHEMA_PATH);
+  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  addFormats(ajv);
+  const validate = ajv.compile(schema);
+
+  if (validate(provenance)) return;
+
+  const details = (validate.errors ?? [])
+    .map((error) => `${error.instancePath || "/"}: ${error.message}`)
+    .join("; ");
+  throw new Error(`Generated publication provenance is invalid: ${details}`);
+}
+
+function mergeRelease(baseCatalog, manifestBytes, manifest, envelope, packagePath, publishedAt) {
   const packageBytes = fs.readFileSync(packagePath);
   const fileName = path.basename(packagePath);
   const expectedFileName = `${manifest.gameId}-${manifest.version}.partybeam`;
@@ -204,7 +230,6 @@ function mergeRelease(baseCatalog, manifest, envelope, packagePath, publishedAt)
     throw new Error(`Package filename must be '${expectedFileName}', got '${fileName}'.`);
   }
 
-  const manifestBytes = fs.readFileSync(manifest.__path);
   const { manifestSha256, packageSha256 } = validateEnvelopeAgainstManifest(
     manifestBytes,
     manifest,
@@ -312,12 +337,19 @@ export function preparePublication({
 
   const baseCatalogBytes = fs.readFileSync(catalogPath);
   const baseCatalog = JSON.parse(baseCatalogBytes.toString("utf8"));
-  const manifest = readJson(manifestPath);
-  manifest.__path = manifestPath;
+  const manifestBytes = fs.readFileSync(manifestPath);
+  const manifest = JSON.parse(manifestBytes.toString("utf8"));
   const envelope = readJson(signaturePath);
+  const packageContractSource = readJson(UPSTREAM_SOURCE_PATH);
 
-  const prepared = mergeRelease(baseCatalog, manifest, envelope, packagePath, publishedAt);
-  delete manifest.__path;
+  const prepared = mergeRelease(
+    baseCatalog,
+    manifestBytes,
+    manifest,
+    envelope,
+    packagePath,
+    publishedAt,
+  );
 
   const candidateText = `${JSON.stringify(prepared.candidate, null, 2)}\n`;
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-publication-"));
@@ -367,10 +399,13 @@ export function preparePublication({
         algorithm: prepared.release.package.signature.algorithm,
         keyId: prepared.release.package.signature.keyId,
       },
+      partyBeamPackageContract: packageContractSource,
       cryptographicSignatureVerified: false,
       cryptographicVerificationNote:
         "Canonical trusted-key verification must be completed by PartyBeam GamePackageVerifier before GitHub Release publication.",
     };
+
+    validateProvenance(provenance);
 
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.mkdirSync(path.dirname(provenancePath), { recursive: true });
