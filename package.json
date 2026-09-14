@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "validate": "node tools/validate-catalog.mjs",
+    "verify-package": "node tools/verify-package-integrity.mjs",
     "test": "node tools/validate-fixtures.mjs"
   },
   "devDependencies": {
