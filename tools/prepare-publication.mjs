@@ -9,6 +9,10 @@ import addFormats from "ajv-formats";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 import { validatePackageProjection } from "./validate-package-projection.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
+import {
+  DEFAULT_TRUST_STORE_PATH,
+  verifyPackageSignature,
+} from "./verify-package-signature.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
@@ -311,6 +315,7 @@ export function preparePublication({
   publishedAt,
   outputPath,
   provenancePath = `${outputPath}.provenance.json`,
+  trustStorePath = DEFAULT_TRUST_STORE_PATH,
   overwrite = false,
 }) {
   for (const [name, filePath] of [
@@ -318,6 +323,7 @@ export function preparePublication({
     ["manifest", manifestPath],
     ["signature", signaturePath],
     ["package", packagePath],
+    ["trust store", trustStorePath],
   ]) {
     if (!filePath || !fs.existsSync(filePath)) {
       throw new Error(`${name} file does not exist: ${filePath}`);
@@ -341,6 +347,18 @@ export function preparePublication({
   const manifest = JSON.parse(manifestBytes.toString("utf8"));
   const envelope = readJson(signaturePath);
   const packageContractSource = readJson(UPSTREAM_SOURCE_PATH);
+  const trustStoreBytes = fs.readFileSync(trustStorePath);
+
+  const signatureErrors = verifyPackageSignature({
+    signaturePath,
+    publisherId: manifest.publisher?.id,
+    trustStorePath,
+  });
+  if (signatureErrors.length > 0) {
+    throw new Error(
+      `Publication signature failed trusted-key verification:\n${formatValidationErrors(signatureErrors)}`,
+    );
+  }
 
   const prepared = mergeRelease(
     baseCatalog,
@@ -388,6 +406,7 @@ export function preparePublication({
       publishedAt,
       baselineCatalogSha256: sha256Bytes(baseCatalogBytes),
       candidateCatalogSha256: sha256Bytes(Buffer.from(candidateText, "utf8")),
+      trustStoreSha256: sha256Bytes(trustStoreBytes),
       releaseAsset: {
         fileName: prepared.release.package.fileName,
         sizeBytes: prepared.release.package.sizeBytes,
@@ -400,9 +419,11 @@ export function preparePublication({
         keyId: prepared.release.package.signature.keyId,
       },
       partyBeamPackageContract: packageContractSource,
-      cryptographicSignatureVerified: false,
+      cryptographicSignatureVerified: true,
+      componentPayloadsVerified: false,
+      fullPackageVerification: false,
       cryptographicVerificationNote:
-        "Canonical trusted-key verification must be completed by PartyBeam GamePackageVerifier before GitHub Release publication.",
+        "ECDSA P-256 P1363 signature over packageSha256 was verified against an active publisher key. Component payload bytes inside the .partybeam container are not yet independently re-verified here; full PartyBeam GamePackageVerifier verification remains required before final GitHub Release publication.",
     };
 
     validateProvenance(provenance);
@@ -419,7 +440,10 @@ export function preparePublication({
 }
 
 function parseArgs(argv) {
-  const options = { overwrite: false };
+  const options = {
+    overwrite: false,
+    trustStorePath: DEFAULT_TRUST_STORE_PATH,
+  };
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
@@ -430,6 +454,7 @@ function parseArgs(argv) {
     else if (value === "--published-at") options.publishedAt = argv[++index];
     else if (value === "--output") options.outputPath = path.resolve(argv[++index]);
     else if (value === "--provenance") options.provenancePath = path.resolve(argv[++index]);
+    else if (value === "--trust-store") options.trustStorePath = path.resolve(argv[++index]);
     else if (value === "--force") options.overwrite = true;
     else throw new Error(`Unknown argument: ${value}`);
   }
@@ -454,7 +479,7 @@ async function main() {
   console.log(
     `Publication candidate prepared: ${provenance.gameId}@${provenance.version} (${provenance.channel}), ${provenance.releaseTag}`,
   );
-  console.log("No GitHub release was created. Canonical trusted-key verification is still required.");
+  console.log("Trusted publisher signature verified. No GitHub Release was created; full component payload verification is still required.");
 }
 
 const invokedAsScript = process.argv[1]
