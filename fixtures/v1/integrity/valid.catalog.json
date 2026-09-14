@@ -17,8 +17,13 @@
             "fileName": "partybeam.integrity-fixture-0.1.0.partybeam",
             "sizeBytes": 31,
             "integrity": {"algorithm": "SHA-256", "digest": "d5f2b505e3131ed90cc4b5a84dff79d5c21d4791feb783fc007230ddc42aa466"},
-            "signature": {"algorithm": "Ed25519", "keyId": "partybeam-ci-example-key", "valueBase64": "AAAAAAAAAAAAAAAAAAAAAA=="},
-            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "packageSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "signature": {
+              "algorithm": "ecdsa-p256-sha256-p1363",
+              "keyId": "partybeam-ci-example-key",
+              "valueBase64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+            }
           },
           "compatibility": {
             "gameContractApi": {"minInclusive": "1.0.0", "maxExclusive": "2.0.0"},
