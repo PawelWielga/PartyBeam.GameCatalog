@@ -35,6 +35,7 @@ catalog/
 schemas/
   v1/
     catalog.schema.json
+  upstream/partybeam/v1/
 fixtures/
   v1/
     assets/
@@ -45,11 +46,15 @@ fixtures/
 docs/
   catalog-contract-v1.md
   package-contract-alignment.md
+  publication-workflow.md
   ci-policy.md
 tools/
+  prepare-publication.mjs
   validate-catalog.mjs
+  validate-catalog-semantics.mjs
   validate-fixtures.mjs
   validate-package-projection.mjs
+  validate-publication-preparation.mjs
   verify-package-integrity.mjs
 ```
 
@@ -65,7 +70,7 @@ PartyBeam clients may read the current v1 catalog directly from GitHub:
 https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/catalog/v1/catalog.json
 ```
 
-Published package URLs use public GitHub Release assets in this repository. The planned naming convention is:
+Published package URLs use public GitHub Release assets in this repository. The naming convention is:
 
 ```text
 release tag: game-<gameId>-v<semver>
@@ -134,8 +139,12 @@ npm run validate-package-projection -- \
 The validation layer covers:
 
 - JSON Schema 2020-12 correctness;
+- pinned PartyBeam manifest/signature-envelope schemas;
 - unique game identities and exact release versions;
 - stable/test SemVer consistency;
+- Game Contract range ordering and player-range correctness;
+- English runtime/catalog fallback required by package manifest v1;
+- required/optional capability consistency and derived Internet-access summary;
 - official public `PartyBeam.GameCatalog` GitHub Release destinations;
 - immutable package and compatibility metadata for an already known `(gameId, version)`;
 - physical release-asset SHA-256 and size when package bytes are supplied;
@@ -147,6 +156,27 @@ The validation layer covers:
 - first-party-only MVP publication policy while retaining schema support for future approved external publishers.
 
 Cryptographic ECDSA verification against the production trusted-key store remains owned by PartyBeam's canonical package verifier while PR #19 is still draft. This repository must share/invoke that verified implementation once available rather than invent a second crypto contract.
+
+## Publication preparation
+
+Issue #4 now has a deterministic local preparation path. It generates a reviewable catalog candidate and provenance record without mutating GitHub:
+
+```bash
+npm run prepare-publication -- \
+  --catalog catalog/v1/catalog.json \
+  --manifest /path/to/manifest.json \
+  --signature /path/to/signature.json \
+  --package /path/to/<gameId>-<version>.partybeam \
+  --published-at 2026-09-14T08:00:00Z \
+  --output /tmp/catalog.candidate.json \
+  --provenance /tmp/publication.provenance.json
+```
+
+Preparation derives the channel, Release tag/URL, asset hash/size, catalog metadata and compatibility projection from signed package inputs, then runs all currently available catalog/package consistency gates. Reusing an existing exact game/version is rejected.
+
+The generated provenance deliberately says `cryptographicSignatureVerified: false`. **It is not permission to publish.** Public GitHub Release creation remains blocked until PartyBeam's canonical trusted-key verifier is integrated.
+
+See `docs/publication-workflow.md`.
 
 ## CI policy
 
