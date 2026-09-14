@@ -63,13 +63,15 @@ Stable releases are not copied into the test index. A PartyBeam installation tha
 
 SemVer ordering follows SemVer 2.0.0 precedence, including numeric prerelease identifiers. Build metadata does not affect precedence.
 
+`prepare-publication` uses the same generator against the candidate catalog and can write candidate channel documents with `--channels-output-dir`. Their exact SHA-256 values are recorded in publication provenance so catalog and channel changes can be reviewed as one atomic publication set.
+
 ## Delisting
 
 Channel indexes contain only `published` releases. A `delisted` release disappears from new channel discovery but remains in the canonical catalog as historical/auditable exact release metadata.
 
 Disappearance from a channel index is not remote revocation and does not instruct PartyBeam to delete a previously verified local package.
 
-The broader lifecycle policy is implemented in issue #6.
+See `docs/release-lifecycle.md` for the full distinction between ordinary delisting, package invalidity and explicit critical-update/safety policy.
 
 ## Fixtures
 
