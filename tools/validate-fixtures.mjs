@@ -3,11 +3,17 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { validateCatalogFile, validateCatalogObject } from "./validate-catalog.mjs";
+import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
 const VALID_DIR = path.join(REPO_ROOT, "fixtures/v1/valid");
 const INVALID_DIR = path.join(REPO_ROOT, "fixtures/v1/invalid");
+const INTEGRITY_DIR = path.join(REPO_ROOT, "fixtures/v1/integrity");
+const INTEGRITY_PACKAGE = path.join(
+  REPO_ROOT,
+  "fixtures/v1/assets/partybeam.integrity-fixture-0.1.0.partybeam",
+);
 const CANONICAL_CATALOG = path.join(REPO_ROOT, "catalog/v1/catalog.json");
 
 function jsonFiles(directory) {
@@ -27,7 +33,12 @@ function clone(value) {
 }
 
 function formatErrors(errors) {
-  return errors.map((error) => `[${error.code}] ${error.instancePath}: ${error.message}`).join("\n");
+  return errors
+    .map((error) => {
+      const location = error.instancePath ? `${error.instancePath}: ` : "";
+      return `[${error.code}] ${location}${error.message}`;
+    })
+    .join("\n");
 }
 
 let failed = false;
@@ -107,6 +118,34 @@ if (currentPolicyErrors.some((error) => error.code === "publisher-not-approved-f
   pass("current MVP publication policy rejects external publishers");
 } else {
   fail("current MVP policy must reject external publishers");
+}
+
+const integrityIdentity = {
+  gameId: "partybeam.integrity-fixture",
+  version: "0.1.0",
+  packagePath: INTEGRITY_PACKAGE,
+};
+
+const validIntegrityErrors = verifyPackageIntegrity({
+  ...integrityIdentity,
+  catalogPath: path.join(INTEGRITY_DIR, "valid.catalog.json"),
+});
+
+if (validIntegrityErrors.length === 0) {
+  pass("actual package bytes match the catalog SHA-256 and size");
+} else {
+  fail(`valid package bytes were rejected\n${formatErrors(validIntegrityErrors)}`);
+}
+
+const wrongHashErrors = verifyPackageIntegrity({
+  ...integrityIdentity,
+  catalogPath: path.join(INTEGRITY_DIR, "wrong-hash.catalog.json"),
+});
+
+if (wrongHashErrors.some((error) => error.code === "package-hash-mismatch")) {
+  pass("wrong package SHA-256 is rejected");
+} else {
+  fail(`wrong package SHA-256 was not rejected\n${formatErrors(wrongHashErrors)}`);
 }
 
 if (failed) {
