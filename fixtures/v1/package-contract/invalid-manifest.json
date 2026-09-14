@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "gameId": "partybeam.reflex",
+  "version": "01.2.3",
+  "publisher": { "id": "partybeam", "displayName": "" },
+  "gameContract": { "minimumVersion": "1.0.0", "maximumVersionExclusive": "2.0.0" },
+  "players": { "minimum": 2, "maximum": 8 },
+  "controllerTopology": "onePhonePerPlayer",
+  "components": [
+    { "id": "tv", "kind": "tv", "releaseVersion": "01.2.3", "artifactPath": "components/tv.zip", "entryPoint": "index.html", "sha256": "not-a-sha256", "runtimeLocales": ["en", "pl_PL"] },
+    { "id": "android-controller", "kind": "androidController", "releaseVersion": "01.2.3", "artifactPath": "components/android.zip", "entryPoint": "index.html", "sha256": "a6e4ba7b9eb602eadaed21406cfc9429a87d6e740855096c22d3cc77e3b6ac3c", "runtimeLocales": ["en"] },
+    { "id": "browser-controller", "kind": "browserController", "releaseVersion": "01.2.3", "artifactPath": "components/browser.zip", "entryPoint": "index.html", "sha256": "fd5829321a5b76ca4faeff6c7633e12d4d9bd87f149ac8783ca15afc7db6c77c", "runtimeLocales": ["en"] }
+  ],
+  "catalogLocales": ["en"],
+  "catalog": {
+    "canonicalTitle": "Reflex",
+    "localized": { "en": { "shortDescription": "Fast reactions." } }
+  },
+  "capabilities": { "required": [], "optional": [] },
+  "network": { "outboundAllowlist": [] },
+  "supportsStandbyResume": false
+}
