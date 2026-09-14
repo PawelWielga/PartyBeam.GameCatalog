@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "games": [
+    {
+      "gameId": "partybeam.prerelease-only",
+      "publisher": { "id": "partybeam", "displayName": "PartyBeam", "kind": "first-party" },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "locales": { "en": { "title": "Prerelease Only", "summary": "Prerelease-only channel fixture." } }
+      },
+      "releases": [
+        {
+          "version": "2.0.0-beta.2",
+          "channel": "test",
+          "publicationState": "published",
+          "publishedAt": "2026-09-14T08:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.prerelease-only-v2.0.0-beta.2/partybeam.prerelease-only-2.0.0-beta.2.partybeam",
+            "fileName": "partybeam.prerelease-only-2.0.0-beta.2.partybeam",
+            "integrity": { "algorithm": "SHA-256", "digest": "3333333333333333333333333333333333333333333333333333333333333333" },
+            "manifestSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "packageSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "signature": { "algorithm": "ecdsa-p256-sha256-p1363", "keyId": "fixture-key", "valueBase64": "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg==" }
+          },
+          "compatibility": {
+            "gameContractApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en"],
+            "catalogLocales": ["en"],
+            "playerCount": { "min": 2, "max": 8 },
+            "controllerTopologies": ["one-phone-per-player"],
+            "capabilities": { "required": [], "optional": [], "internetAccess": "none" },
+            "standbyResumeSupported": false
+          }
+        },
+        {
+          "version": "2.0.0-beta.10",
+          "channel": "test",
+          "publicationState": "published",
+          "publishedAt": "2026-09-14T09:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.prerelease-only-v2.0.0-beta.10/partybeam.prerelease-only-2.0.0-beta.10.partybeam",
+            "fileName": "partybeam.prerelease-only-2.0.0-beta.10.partybeam",
+            "integrity": { "algorithm": "SHA-256", "digest": "4444444444444444444444444444444444444444444444444444444444444444" },
+            "manifestSha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "packageSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "signature": { "algorithm": "ecdsa-p256-sha256-p1363", "keyId": "fixture-key", "valueBase64": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAw==" }
+          },
+          "compatibility": {
+            "gameContractApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en"],
+            "catalogLocales": ["en"],
+            "playerCount": { "min": 2, "max": 8 },
+            "controllerTopologies": ["one-phone-per-player"],
+            "capabilities": { "required": [], "optional": [], "internetAccess": "none" },
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    }
+  ]
+}
