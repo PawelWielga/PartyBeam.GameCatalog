@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/schemas/v1/channel-index.schema.json",
+  "title": "PartyBeam Channel Index v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogId", "channel", "sourceCatalogPath", "games"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "catalogId": { "const": "partybeam-official" },
+    "channel": { "enum": ["stable", "test"] },
+    "sourceCatalogPath": { "const": "catalog/v1/catalog.json" },
+    "games": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/game" }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gameId", "latestVersion", "versions"],
+      "properties": {
+        "gameId": { "$ref": "#/$defs/identifier" },
+        "latestVersion": { "$ref": "#/$defs/semver" },
+        "versions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/semver" }
+        }
+      }
+    }
+  }
+}
