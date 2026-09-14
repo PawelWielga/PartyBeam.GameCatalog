@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "defaultChannel": "stable",
+  "channels": {
+    "stable": {
+      "indexPath": "catalog/v1/channels/stable.json",
+      "prerelease": false,
+      "optInRequired": false
+    },
+    "test": {
+      "indexPath": "catalog/v1/channels/test.json",
+      "prerelease": true,
+      "optInRequired": true
+    }
+  }
+}
