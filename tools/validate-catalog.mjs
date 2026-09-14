@@ -9,6 +9,8 @@ const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
 export const DEFAULT_SCHEMA_PATH = path.join(REPO_ROOT, "schemas/v1/catalog.schema.json");
 export const DEFAULT_CATALOG_PATH = path.join(REPO_ROOT, "catalog/v1/catalog.json");
+const ENGLISH_LOCALE = "en";
+const INTERNET_ACCESS_CAPABILITY = "internetAccess";
 
 function readJson(filePath) {
   try {
@@ -56,6 +58,53 @@ function buildSchemaValidator(schemaPath) {
 
 function hasPrerelease(version) {
   return version.split("+")[0].includes("-");
+}
+
+function parseSemVer(version) {
+  const withoutBuild = version.split("+", 1)[0];
+  const dashIndex = withoutBuild.indexOf("-");
+  const core = dashIndex >= 0 ? withoutBuild.slice(0, dashIndex) : withoutBuild;
+  const prerelease = dashIndex >= 0 ? withoutBuild.slice(dashIndex + 1).split(".") : [];
+  const [major, minor, patch] = core.split(".").map(Number);
+  return { major, minor, patch, prerelease };
+}
+
+function compareSemVer(leftVersion, rightVersion) {
+  const left = parseSemVer(leftVersion);
+  const right = parseSemVer(rightVersion);
+
+  for (const key of ["major", "minor", "patch"]) {
+    if (left[key] !== right[key]) {
+      return left[key] < right[key] ? -1 : 1;
+    }
+  }
+
+  if (left.prerelease.length === 0 && right.prerelease.length === 0) return 0;
+  if (left.prerelease.length === 0) return 1;
+  if (right.prerelease.length === 0) return -1;
+
+  const length = Math.max(left.prerelease.length, right.prerelease.length);
+  for (let index = 0; index < length; index += 1) {
+    const leftPart = left.prerelease[index];
+    const rightPart = right.prerelease[index];
+
+    if (leftPart === undefined) return -1;
+    if (rightPart === undefined) return 1;
+    if (leftPart === rightPart) continue;
+
+    const leftNumeric = /^\d+$/.test(leftPart);
+    const rightNumeric = /^\d+$/.test(rightPart);
+
+    if (leftNumeric && rightNumeric) {
+      return Number(leftPart) < Number(rightPart) ? -1 : 1;
+    }
+    if (leftNumeric !== rightNumeric) {
+      return leftNumeric ? -1 : 1;
+    }
+    return leftPart < rightPart ? -1 : 1;
+  }
+
+  return 0;
 }
 
 function validateOfficialReleaseUrl(assetUrl, fileName, instancePath) {
@@ -228,6 +277,7 @@ export function validateCatalogObject(
 
     game.releases.forEach((release, releaseIndex) => {
       const releasePath = `${gamePath}/releases/${releaseIndex}`;
+      const compatibilityPath = `${releasePath}/compatibility`;
 
       if (releaseVersions.has(release.version)) {
         errors.push(
@@ -260,27 +310,75 @@ export function validateCatalogObject(
         );
       }
 
+      const contractRange = release.compatibility.gameContractApi;
+      if (compareSemVer(contractRange.minInclusive, contractRange.maxExclusive) >= 0) {
+        errors.push(
+          issue(
+            "game-contract-range",
+            `${compatibilityPath}/gameContractApi`,
+            "gameContractApi.minInclusive must be lower than maxExclusive",
+          ),
+        );
+      }
+
       if (release.compatibility.playerCount.min > release.compatibility.playerCount.max) {
         errors.push(
           issue(
             "player-count-range",
-            `${releasePath}/compatibility/playerCount`,
+            `${compatibilityPath}/playerCount`,
             "playerCount.min must be less than or equal to playerCount.max",
           ),
         );
       }
 
+      if (!release.compatibility.runtimeLocales.some((locale) => locale.toLowerCase() === ENGLISH_LOCALE)) {
+        errors.push(
+          issue(
+            "runtime-english-fallback-missing",
+            `${compatibilityPath}/runtimeLocales`,
+            "PartyBeam package manifest v1 requires English ('en') as a runtime locale fallback",
+          ),
+        );
+      }
+
+      if (!release.compatibility.catalogLocales.some((locale) => locale.toLowerCase() === ENGLISH_LOCALE)) {
+        errors.push(
+          issue(
+            "catalog-english-fallback-missing",
+            `${compatibilityPath}/catalogLocales`,
+            "PartyBeam package manifest v1 requires English ('en') as a catalog locale fallback",
+          ),
+        );
+      }
+
       const requiredCapabilities = new Set(release.compatibility.capabilities.required);
-      for (const capability of release.compatibility.capabilities.optional) {
+      const optionalCapabilities = new Set(release.compatibility.capabilities.optional);
+      for (const capability of optionalCapabilities) {
         if (requiredCapabilities.has(capability)) {
           errors.push(
             issue(
               "capability-required-and-optional",
-              `${releasePath}/compatibility/capabilities`,
+              `${compatibilityPath}/capabilities`,
               `capability '${capability}' cannot be both required and optional`,
             ),
           );
         }
+      }
+
+      const expectedInternetAccess = requiredCapabilities.has(INTERNET_ACCESS_CAPABILITY)
+        ? "required"
+        : optionalCapabilities.has(INTERNET_ACCESS_CAPABILITY)
+          ? "optional"
+          : "none";
+
+      if (release.compatibility.capabilities.internetAccess !== expectedInternetAccess) {
+        errors.push(
+          issue(
+            "internet-access-summary",
+            `${compatibilityPath}/capabilities/internetAccess`,
+            `internetAccess must be '${expectedInternetAccess}' based on required/optional capability declarations`,
+          ),
+        );
       }
 
       const catalogLocales = new Set(Object.keys(game.catalogMetadata.locales));
@@ -289,7 +387,7 @@ export function validateCatalogObject(
           errors.push(
             issue(
               "compatibility-catalog-locale-missing",
-              `${releasePath}/compatibility/catalogLocales`,
+              `${compatibilityPath}/catalogLocales`,
               `catalog locale '${locale}' has no catalogMetadata.locales entry`,
             ),
           );
