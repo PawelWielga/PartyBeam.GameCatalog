@@ -81,15 +81,17 @@ function deriveInternetAccess(capabilities) {
 function commonRuntimeLocales(components) {
   if (components.length === 0) return [];
 
-  const common = new Set(components[0].runtimeLocales);
+  const common = new Map(
+    components[0].runtimeLocales.map((locale) => [locale.toLowerCase(), locale]),
+  );
   for (const component of components.slice(1)) {
-    const current = new Set(component.runtimeLocales);
-    for (const locale of [...common]) {
-      if (!current.has(locale)) common.delete(locale);
+    const current = new Set(component.runtimeLocales.map((locale) => locale.toLowerCase()));
+    for (const normalized of [...common.keys()]) {
+      if (!current.has(normalized)) common.delete(normalized);
     }
   }
 
-  return [...common];
+  return [...common.values()];
 }
 
 function normalizeSupportUrl(value) {
@@ -111,15 +113,26 @@ function normalizeSupportUrl(value) {
   }
 }
 
+function findLocalizedMetadata(localized, locale) {
+  const target = locale.toLowerCase();
+  for (const [key, value] of Object.entries(localized ?? {})) {
+    if (key.toLowerCase() === target) return value;
+  }
+  return null;
+}
+
 function buildCatalogMetadata(manifest) {
-  const english = manifest.catalog?.localized?.en;
-  if (!english || !english.shortDescription?.trim()) {
+  const englishLocale = manifest.catalogLocales.find((locale) => locale.toLowerCase() === "en");
+  const english = englishLocale
+    ? findLocalizedMetadata(manifest.catalog.localized, englishLocale)
+    : null;
+  if (!englishLocale || !english || !english.shortDescription?.trim()) {
     throw new Error("PartyBeam manifest v1 requires usable English catalog metadata.");
   }
 
   const locales = {};
   for (const locale of manifest.catalogLocales) {
-    const localized = manifest.catalog.localized[locale];
+    const localized = findLocalizedMetadata(manifest.catalog.localized, locale);
     const source = localized?.shortDescription?.trim() ? localized : english;
     locales[locale] = {
       title: source.title?.trim() || manifest.catalog.canonicalTitle,
@@ -128,7 +141,7 @@ function buildCatalogMetadata(manifest) {
   }
 
   const metadata = {
-    defaultLocale: "en",
+    defaultLocale: englishLocale,
     locales,
   };
 
