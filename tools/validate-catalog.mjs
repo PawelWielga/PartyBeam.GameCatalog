@@ -169,6 +169,13 @@ function validateBaselineImmutability(candidate, baseline) {
   for (const baselineGame of baseline.games ?? []) {
     const candidateGame = candidateGames.get(baselineGame.gameId);
     if (!candidateGame) {
+      errors.push(
+        issue(
+          "game-history-removed",
+          `/games/${baselineGame.gameId}`,
+          `existing game '${baselineGame.gameId}' cannot be removed from canonical catalog history; delist its releases instead`,
+        ),
+      );
       continue;
     }
 
@@ -187,12 +194,18 @@ function validateBaselineImmutability(candidate, baseline) {
     );
 
     for (const baselineRelease of baselineGame.releases ?? []) {
+      const releasePath = `/games/${baselineGame.gameId}/releases/${baselineRelease.version}`;
       const candidateRelease = candidateReleases.get(baselineRelease.version);
       if (!candidateRelease) {
+        errors.push(
+          issue(
+            "release-history-removed",
+            releasePath,
+            `existing release ${baselineGame.gameId}@${baselineRelease.version} cannot be removed from canonical history; set publicationState to 'delisted' instead`,
+          ),
+        );
         continue;
       }
-
-      const releasePath = `/games/${baselineGame.gameId}/releases/${baselineRelease.version}`;
 
       if (!sameValue(candidateRelease.package, baselineRelease.package)) {
         errors.push(
@@ -210,6 +223,16 @@ function validateBaselineImmutability(candidate, baseline) {
             "release-compatibility-mutated",
             `${releasePath}/compatibility`,
             `compatibility projection for immutable release ${baselineGame.gameId}@${baselineRelease.version} changed`,
+          ),
+        );
+      }
+
+      if (candidateRelease.publishedAt !== baselineRelease.publishedAt) {
+        errors.push(
+          issue(
+            "release-published-at-mutated",
+            `${releasePath}/publishedAt`,
+            `publishedAt for immutable release ${baselineGame.gameId}@${baselineRelease.version} changed`,
           ),
         );
       }
