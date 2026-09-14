@@ -16,6 +16,10 @@ const PACKAGE_PATH = path.join(
   REPO_ROOT,
   "fixtures/v1/assets/partybeam.integrity-fixture-0.1.0.partybeam",
 );
+const PACKAGE_CONTRACT_SOURCE_PATH = path.join(
+  REPO_ROOT,
+  "schemas/upstream/partybeam/v1/source.json",
+);
 let failed = false;
 
 function pass(message) {
@@ -90,9 +94,12 @@ try {
       algorithm: release.package.signature.algorithm,
       keyId: release.package.signature.keyId,
     },
+    partyBeamPackageContract: JSON.parse(fs.readFileSync(PACKAGE_CONTRACT_SOURCE_PATH, "utf8")),
     cryptographicSignatureVerified: true,
     componentPayloadsVerified: false,
     fullPackageVerification: false,
+    cryptographicVerificationNote:
+      "Synthetic authorization fixture: signature flag alone is intentionally insufficient for final publication.",
   };
   fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");
 
