@@ -156,10 +156,11 @@ const projectionIdentity = {
   manifestPath: path.join(PACKAGE_CONTRACT_DIR, "manifest.json"),
   signaturePath: path.join(PACKAGE_CONTRACT_DIR, "signature.json"),
 };
+const projectionCatalogPath = path.join(PACKAGE_CONTRACT_DIR, "valid.catalog.json");
 
 const validProjectionErrors = validatePackageProjection({
   ...projectionIdentity,
-  catalogPath: path.join(PACKAGE_CONTRACT_DIR, "valid.catalog.json"),
+  catalogPath: projectionCatalogPath,
 });
 
 if (validProjectionErrors.length === 0) {
@@ -177,6 +178,30 @@ if (mismatchProjectionErrors.some((error) => error.code === "projection-player-m
   pass("catalog/manifest compatibility disagreement is rejected");
 } else {
   fail(`catalog/manifest mismatch was not rejected\n${formatErrors(mismatchProjectionErrors)}`);
+}
+
+const malformedManifestErrors = validatePackageProjection({
+  ...projectionIdentity,
+  catalogPath: projectionCatalogPath,
+  manifestPath: path.join(PACKAGE_CONTRACT_DIR, "invalid-manifest.json"),
+});
+
+if (malformedManifestErrors.some((error) => error.code.startsWith("manifest-schema-"))) {
+  pass("malformed PartyBeam manifest is rejected by the pinned upstream schema");
+} else {
+  fail(`malformed PartyBeam manifest was not rejected\n${formatErrors(malformedManifestErrors)}`);
+}
+
+const malformedSignatureErrors = validatePackageProjection({
+  ...projectionIdentity,
+  catalogPath: projectionCatalogPath,
+  signaturePath: path.join(PACKAGE_CONTRACT_DIR, "invalid-signature.json"),
+});
+
+if (malformedSignatureErrors.some((error) => error.code.startsWith("signature-schema-"))) {
+  pass("invalid PartyBeam signature envelope is rejected by the pinned upstream schema");
+} else {
+  fail(`invalid PartyBeam signature envelope was not rejected\n${formatErrors(malformedSignatureErrors)}`);
 }
 
 if (failed) {
