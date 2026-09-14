@@ -2,17 +2,19 @@
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is `PawelWielga/PartyBeam` draft PR #19 (`feature/02-game-package-manifest`). Until that PR is merged, this mapping is implemented and tested here but remains subject to final upstream review.
+The current alignment target is `PawelWielga/PartyBeam` draft PR #19 (`feature/02-game-package-manifest`), pinned in `schemas/upstream/partybeam/v1/source.json`. Until that PR is merged, this mapping is implemented and tested here but remains subject to final upstream review.
 
 ## Authority
 
 The signed package remains authoritative for runtime facts. The catalog is a public discovery/distribution projection and must never override a different signed manifest value.
 
-Publication validation therefore checks three separate layers:
+Publication validation therefore checks separate layers:
 
 1. release asset integrity: SHA-256 of the actual downloadable `.partybeam` file;
-2. signed logical package identity: exact manifest hash, logical package hash and signature envelope metadata;
-3. catalog projection equality: discovery/compatibility fields must agree with the signed manifest.
+2. signed logical package identity: exact manifest hash, logical package hash and detached signature;
+3. publication trust: `keyId` must resolve to an active public key bound to the exact publisher identity;
+4. catalog projection equality: discovery/compatibility fields must agree with the signed manifest;
+5. full component payload verification: ultimately performed by PartyBeam's canonical `GamePackageVerifier` once the `.partybeam` container/extraction integration is available to publication tooling.
 
 ## Integrity and signature mapping
 
@@ -28,7 +30,29 @@ The catalog release stores those values unchanged under `package.manifestSha256`
 
 `package.integrity.digest` is deliberately different: it is the SHA-256 of the downloadable GitHub Release asset bytes. PartyBeam's logical package hash is container-independent, while the catalog still needs a transport-level hash for the exact asset being downloaded.
 
-A repacked container can therefore have a different `package.integrity.digest` while retaining the same signed logical `packageSha256` only if publication policy explicitly publishes that new asset. An already published `(gameId, version)` remains immutable in this catalog.
+A repacked container can therefore have a different `package.integrity.digest` while retaining the same signed logical `packageSha256` only before publication under a new allowed identity/policy. An already published `(gameId, version)` remains immutable in this catalog and its public asset must not be silently replaced.
+
+## Publisher trust mapping
+
+`tools/verify-package-signature.mjs` verifies the detached ECDSA signature before publication preparation.
+
+The public trust store in `trust/v1/publisher-keys.json` binds:
+
+```text
+keyId -> publisherId -> algorithm/status/public key
+```
+
+For a new publication:
+
+- the key must exist;
+- its `publisherId` must equal manifest `publisher.id`;
+- its status must be `active`;
+- its algorithm must be `ecdsa-p256-sha256-p1363`;
+- the P1363 signature must verify over the already-computed 32-byte `packageSha256` without hashing it a second time.
+
+The production trust store is intentionally empty until a real PartyBeam production public signing key is provisioned. This means production publication fails closed today.
+
+See `docs/publisher-trust-store.md`.
 
 ## Identity mapping
 
@@ -66,7 +90,7 @@ Controller topology wire values are normalized for existing catalog consumers:
 - `optional` when it is in `capabilities.optional`;
 - `none` otherwise.
 
-The exact WAN `network.outboundAllowlist` stays in the signed manifest and is not duplicated into catalog discovery metadata.
+The exact WAN `network.outboundAllowlist` stays in the signed manifest and is not duplicated into catalog discovery metadata. Publication validation still checks PartyBeam's semantic coupling: `internetAccess` requires at least one valid HTTPS allowlist destination, while an allowlist without `internetAccess` is invalid.
 
 ## Component and surface mapping
 
@@ -76,7 +100,9 @@ Manifest schema v1 requires exactly one component of each kind:
 - `androidController` -> catalog surface `android`;
 - `browserController` -> catalog surface `browser`.
 
-`compatibility.runtimeLocales` is the intersection of `components[].runtimeLocales`, meaning languages in this catalog field are safe to advertise as supported across the complete release rather than merely by one component.
+Publication validation additionally rejects duplicate component IDs and duplicate `artifactPath` values because those are semantic constraints not fully expressible by the upstream JSON Schema alone.
+
+`compatibility.runtimeLocales` is the case-insensitive intersection of `components[].runtimeLocales`, meaning languages in this catalog field are safe to advertise as supported across the complete release rather than merely by one component.
 
 Per-component runtime locale differences remain authoritative in the signed manifest.
 
@@ -84,9 +110,13 @@ Per-component runtime locale differences remain authoritative in the signed mani
 
 The package manifest's `catalog` object supplies signed author metadata. Publication validation maps:
 
-- `catalog.supportUrl` -> `catalogMetadata.supportUrl`;
+- valid `catalog.supportUrl` -> `catalogMetadata.supportUrl`;
 - `catalog.localized[locale].shortDescription` -> `catalogMetadata.locales[locale].summary`;
 - localized manifest `title` when present, otherwise `catalog.canonicalTitle` -> catalog localized `title`.
+
+Locale keys are matched case-insensitively, matching PartyBeam's validator. A localized key must be declared in `catalogLocales`, and case-only duplicates are rejected.
+
+A declared non-English catalog locale with missing/incomplete localized metadata falls back to English. An invalid optional `supportUrl` is ignored rather than converted into a blocking catalog error, matching PartyBeam's non-blocking warning semantics.
 
 Catalog-only presentation references such as artwork or description URLs may be added by the official publication layer, but they cannot alter signed runtime/security declarations.
 
@@ -94,8 +124,12 @@ Catalog-only presentation references such as artwork or description URLs may be 
 
 `tools/validate-package-projection.mjs` validates one exact catalog release against `manifest.json` and `signature.json`.
 
-It currently verifies:
+It verifies:
 
+- pinned upstream manifest and signature-envelope JSON Schemas;
+- semantic component uniqueness/kind rules;
+- case-insensitive locale uniqueness/declaration rules;
+- WAN/internetAccess coupling and HTTPS destination safety;
 - exact `manifest.json` SHA-256;
 - deterministic logical `packageSha256` using PartyBeam's descriptor format;
 - signature-envelope metadata shape and exact equality with catalog signature metadata;
@@ -106,10 +140,12 @@ It currently verifies:
 - common runtime locales and catalog locales;
 - required/optional capabilities and derived Internet access requirement;
 - standby/resume support;
-- localized title/summary and support URL projection;
-- exact component `releaseVersion` equality with the package version.
+- localized title/summary and optional support URL projection/fallback;
+- exact component `releaseVersion` equality with package version.
 
-Cryptographic ECDSA verification against a production trusted public-key registry is intentionally not reimplemented independently here while PartyBeam PR #19 remains draft. The PartyBeam package verifier owns the canonical signature-verification implementation. Once that contract is merged and its trusted-key integration is available for publication tooling, this repository should invoke or share that verifier rather than create a subtly different crypto implementation.
+`tools/verify-package-signature.mjs` separately performs the publication-side trusted-key ECDSA P-256/P1363 verification. Test keys are generated ephemerally and no private signing key is stored in this repository.
+
+PartyBeam's `GamePackageVerifier` remains canonical for **full package verification** because it receives and hashes the actual component payload bytes. GameCatalog will invoke/share that verifier once the `.partybeam` container/extraction boundary is defined instead of inventing a container layout.
 
 ## CI status
 
