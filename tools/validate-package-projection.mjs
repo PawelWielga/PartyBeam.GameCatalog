@@ -18,6 +18,8 @@ const SIGNATURE_SCHEMA_PATH = path.join(
   "schemas/upstream/partybeam/v1/game-package-signature-envelope.schema.json",
 );
 const SIGNATURE_ALGORITHM = "ecdsa-p256-sha256-p1363";
+const INTERNET_ACCESS_CAPABILITY = "internetAccess";
+const REQUIRED_COMPONENT_KINDS = ["tv", "androidController", "browserController"];
 const SURFACE_BY_COMPONENT_KIND = new Map([
   ["tv", "tv"],
   ["androidController", "android"],
@@ -78,16 +80,18 @@ function commonRuntimeLocales(components) {
     return [];
   }
 
-  const common = new Set(components[0].runtimeLocales ?? []);
+  const common = new Map(
+    (components[0].runtimeLocales ?? []).map((locale) => [locale.toLowerCase(), locale]),
+  );
   for (const component of components.slice(1)) {
-    const current = new Set(component.runtimeLocales ?? []);
-    for (const locale of [...common]) {
-      if (!current.has(locale)) {
-        common.delete(locale);
+    const current = new Set((component.runtimeLocales ?? []).map((locale) => locale.toLowerCase()));
+    for (const key of [...common.keys()]) {
+      if (!current.has(key)) {
+        common.delete(key);
       }
     }
   }
-  return [...common];
+  return [...common.values()];
 }
 
 function compareOrdinal(left, right) {
@@ -115,10 +119,10 @@ function logicalPackageSha256(manifestSha256, components) {
 }
 
 function deriveInternetAccess(capabilities) {
-  if ((capabilities.required ?? []).includes("internetAccess")) {
+  if ((capabilities.required ?? []).includes(INTERNET_ACCESS_CAPABILITY)) {
     return "required";
   }
-  if ((capabilities.optional ?? []).includes("internetAccess")) {
+  if ((capabilities.optional ?? []).includes(INTERNET_ACCESS_CAPABILITY)) {
     return "optional";
   }
   return "none";
@@ -167,6 +171,183 @@ function validateSignatureEncoding(signature, errors) {
   }
 }
 
+function findLocalizedMetadata(localized, locale) {
+  const target = locale.toLowerCase();
+  for (const [key, value] of Object.entries(localized ?? {})) {
+    if (key.toLowerCase() === target) return value;
+  }
+  return null;
+}
+
+function normalizedSupportUrl(value) {
+  if (value === null || value === undefined || value === "") return null;
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || !url.hostname || url.username || url.password) {
+      return null;
+    }
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+function isValidWanDestination(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && Boolean(url.hostname)
+      && !url.username
+      && !url.password
+      && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
+function validateCaseInsensitiveUnique(values, pathPrefix, code, label, errors) {
+  const seen = new Set();
+  for (const value of values) {
+    const normalized = value.toLowerCase();
+    if (seen.has(normalized)) {
+      errors.push(
+        issue(code, pathPrefix, `${label} '${value}' is duplicated when compared case-insensitively`),
+      );
+    }
+    seen.add(normalized);
+  }
+}
+
+function validateManifestSemantics(manifest, errors) {
+  const componentIds = new Set();
+  const artifactPaths = new Set();
+
+  for (const component of manifest.components) {
+    if (componentIds.has(component.id)) {
+      errors.push(
+        issue(
+          "manifest-duplicate-component-id",
+          "/components",
+          `component id '${component.id}' is declared more than once`,
+        ),
+      );
+    }
+    componentIds.add(component.id);
+
+    if (artifactPaths.has(component.artifactPath)) {
+      errors.push(
+        issue(
+          "manifest-duplicate-artifact-path",
+          "/components",
+          `artifactPath '${component.artifactPath}' is referenced by more than one component`,
+        ),
+      );
+    }
+    artifactPaths.add(component.artifactPath);
+
+    validateCaseInsensitiveUnique(
+      component.runtimeLocales,
+      `/components/${component.id}/runtimeLocales`,
+      "manifest-duplicate-runtime-locale",
+      "runtime locale",
+      errors,
+    );
+  }
+
+  for (const kind of REQUIRED_COMPONENT_KINDS) {
+    const count = manifest.components.filter((component) => component.kind === kind).length;
+    if (count !== 1) {
+      errors.push(
+        issue(
+          "manifest-required-component-count",
+          "/components",
+          `manifest v1 requires exactly one '${kind}' component; found ${count}`,
+        ),
+      );
+    }
+  }
+
+  validateCaseInsensitiveUnique(
+    manifest.catalogLocales,
+    "/catalogLocales",
+    "manifest-duplicate-catalog-locale",
+    "catalog locale",
+    errors,
+  );
+
+  const declaredCatalogLocales = new Set(manifest.catalogLocales.map((locale) => locale.toLowerCase()));
+  const localizedKeys = Object.keys(manifest.catalog.localized);
+  validateCaseInsensitiveUnique(
+    localizedKeys,
+    "/catalog/localized",
+    "manifest-duplicate-localized-key",
+    "localized catalog key",
+    errors,
+  );
+
+  for (const locale of localizedKeys) {
+    if (!declaredCatalogLocales.has(locale.toLowerCase())) {
+      errors.push(
+        issue(
+          "manifest-localized-locale-not-declared",
+          `/catalog/localized/${locale}`,
+          `localized catalog key '${locale}' is not declared in catalogLocales`,
+        ),
+      );
+    }
+  }
+
+  const requiredCapabilities = new Set(manifest.capabilities.required);
+  const optionalCapabilities = new Set(manifest.capabilities.optional);
+  for (const capability of optionalCapabilities) {
+    if (requiredCapabilities.has(capability)) {
+      errors.push(
+        issue(
+          "manifest-capability-required-and-optional",
+          "/capabilities",
+          `capability '${capability}' cannot be both required and optional`,
+        ),
+      );
+    }
+  }
+
+  const hasInternetAccess = requiredCapabilities.has(INTERNET_ACCESS_CAPABILITY)
+    || optionalCapabilities.has(INTERNET_ACCESS_CAPABILITY);
+  const allowlist = manifest.network.outboundAllowlist;
+
+  if (hasInternetAccess && allowlist.length === 0) {
+    errors.push(
+      issue(
+        "manifest-missing-wan-allowlist",
+        "/network/outboundAllowlist",
+        "internetAccess requires at least one explicitly declared HTTPS destination",
+      ),
+    );
+  }
+  if (!hasInternetAccess && allowlist.length > 0) {
+    errors.push(
+      issue(
+        "manifest-wan-without-internet-access",
+        "/network/outboundAllowlist",
+        "outbound WAN destinations cannot be declared without internetAccess capability",
+      ),
+    );
+  }
+
+  for (const destination of allowlist) {
+    if (!isValidWanDestination(destination)) {
+      errors.push(
+        issue(
+          "manifest-invalid-wan-destination",
+          "/network/outboundAllowlist",
+          `WAN destination '${destination}' must be an absolute HTTPS URL without user-info or fragment data`,
+        ),
+      );
+    }
+  }
+}
+
 export function validatePackageProjection({
   catalogPath,
   gameId,
@@ -189,6 +370,11 @@ export function validatePackageProjection({
   const signatureValidator = buildSchemaValidator(SIGNATURE_SCHEMA_PATH);
   errors.push(...schemaErrors(manifestValidator, manifest, "manifest"));
   errors.push(...schemaErrors(signatureValidator, envelope, "signature"));
+  if (errors.length > 0) {
+    return errors;
+  }
+
+  validateManifestSemantics(manifest, errors);
   if (errors.length > 0) {
     return errors;
   }
@@ -338,15 +524,15 @@ export function validatePackageProjection({
     errors,
     "projection-runtime-locales",
     "/compatibility/runtimeLocales",
-    release.compatibility.runtimeLocales,
-    commonRuntimeLocales(manifest.components),
+    release.compatibility.runtimeLocales.map((locale) => locale.toLowerCase()),
+    commonRuntimeLocales(manifest.components).map((locale) => locale.toLowerCase()),
   );
   compareSet(
     errors,
     "projection-catalog-locales",
     "/compatibility/catalogLocales",
-    release.compatibility.catalogLocales,
-    manifest.catalogLocales,
+    release.compatibility.catalogLocales.map((locale) => locale.toLowerCase()),
+    manifest.catalogLocales.map((locale) => locale.toLowerCase()),
   );
   compareSet(
     errors,
@@ -377,7 +563,9 @@ export function validatePackageProjection({
     manifest.supportsStandbyResume,
   );
 
-  if (!manifest.catalogLocales.includes(game.catalogMetadata.defaultLocale)) {
+  if (!manifest.catalogLocales.some(
+    (locale) => locale.toLowerCase() === game.catalogMetadata.defaultLocale.toLowerCase(),
+  )) {
     errors.push(
       issue(
         "projection-default-locale",
@@ -392,17 +580,19 @@ export function validatePackageProjection({
     "projection-support-url",
     "/catalogMetadata/supportUrl",
     game.catalogMetadata.supportUrl ?? null,
-    manifest.catalog.supportUrl ?? null,
+    normalizedSupportUrl(manifest.catalog.supportUrl),
   );
 
+  const englishMetadata = findLocalizedMetadata(manifest.catalog.localized, "en");
   for (const [locale, metadata] of Object.entries(game.catalogMetadata.locales)) {
-    const manifestMetadata = manifest.catalog.localized[locale];
+    const localized = findLocalizedMetadata(manifest.catalog.localized, locale);
+    const manifestMetadata = localized?.shortDescription?.trim() ? localized : englishMetadata;
     if (!manifestMetadata) {
       errors.push(
         issue(
           "projection-localized-metadata-missing",
           `/catalogMetadata/locales/${locale}`,
-          `manifest does not contain localized catalog metadata for '${locale}'`,
+          `manifest has no usable localized metadata or English fallback for '${locale}'`,
         ),
       );
       continue;
@@ -413,7 +603,7 @@ export function validatePackageProjection({
       "projection-localized-title",
       `/catalogMetadata/locales/${locale}/title`,
       metadata.title,
-      manifestMetadata.title ?? manifest.catalog.canonicalTitle,
+      manifestMetadata.title?.trim() || manifest.catalog.canonicalTitle,
     );
     compareValue(
       errors,
