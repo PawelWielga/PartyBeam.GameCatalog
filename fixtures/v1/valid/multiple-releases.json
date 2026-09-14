@@ -43,43 +43,27 @@
               "algorithm": "SHA-256",
               "digest": "1111111111111111111111111111111111111111111111111111111111111111"
             },
+            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "packageSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "signature": {
-              "algorithm": "Ed25519",
+              "algorithm": "ecdsa-p256-sha256-p1363",
               "keyId": "partybeam-ci-example-key",
-              "valueBase64": "AAAAAAAAAAAAAAAAAAAAAA=="
-            },
-            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "valueBase64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+            }
           },
           "compatibility": {
             "gameContractApi": {
               "minInclusive": "1.0.0",
               "maxExclusive": "2.0.0"
             },
-            "surfaces": [
-              "tv",
-              "android",
-              "browser"
-            ],
-            "runtimeLocales": [
-              "en",
-              "pl"
-            ],
-            "catalogLocales": [
-              "en",
-              "pl"
-            ],
-            "playerCount": {
-              "min": 2,
-              "max": 8
-            },
-            "controllerTopologies": [
-              "one-phone-per-player"
-            ],
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en", "pl"],
+            "catalogLocales": ["en", "pl"],
+            "playerCount": {"min": 2, "max": 8},
+            "controllerTopologies": ["one-phone-per-player"],
             "capabilities": {
               "required": [],
-              "optional": [
-                "haptics"
-              ],
+              "optional": ["haptics"],
               "internetAccess": "none"
             },
             "standbyResumeSupported": false
@@ -98,43 +82,27 @@
               "algorithm": "SHA-256",
               "digest": "2222222222222222222222222222222222222222222222222222222222222222"
             },
+            "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "packageSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
             "signature": {
-              "algorithm": "Ed25519",
+              "algorithm": "ecdsa-p256-sha256-p1363",
               "keyId": "partybeam-ci-example-key",
-              "valueBase64": "AQEBAQEBAQEBAQEBAQEBAQ=="
-            },
-            "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              "valueBase64": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=="
+            }
           },
           "compatibility": {
             "gameContractApi": {
               "minInclusive": "1.0.0",
               "maxExclusive": "2.0.0"
             },
-            "surfaces": [
-              "tv",
-              "android",
-              "browser"
-            ],
-            "runtimeLocales": [
-              "en",
-              "pl"
-            ],
-            "catalogLocales": [
-              "en",
-              "pl"
-            ],
-            "playerCount": {
-              "min": 2,
-              "max": 8
-            },
-            "controllerTopologies": [
-              "one-phone-per-player"
-            ],
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en", "pl"],
+            "catalogLocales": ["en", "pl"],
+            "playerCount": {"min": 2, "max": 8},
+            "controllerTopologies": ["one-phone-per-player"],
             "capabilities": {
               "required": [],
-              "optional": [
-                "haptics"
-              ],
+              "optional": ["haptics"],
               "internetAccess": "none"
             },
             "standbyResumeSupported": false
