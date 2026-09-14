@@ -3,6 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { validateCatalogFile, validateCatalogObject } from "./validate-catalog.mjs";
+import { validatePackageProjection } from "./validate-package-projection.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -10,6 +11,7 @@ const REPO_ROOT = path.resolve(TOOL_DIR, "..");
 const VALID_DIR = path.join(REPO_ROOT, "fixtures/v1/valid");
 const INVALID_DIR = path.join(REPO_ROOT, "fixtures/v1/invalid");
 const INTEGRITY_DIR = path.join(REPO_ROOT, "fixtures/v1/integrity");
+const PACKAGE_CONTRACT_DIR = path.join(REPO_ROOT, "fixtures/v1/package-contract");
 const INTEGRITY_PACKAGE = path.join(
   REPO_ROOT,
   "fixtures/v1/assets/partybeam.integrity-fixture-0.1.0.partybeam",
@@ -132,7 +134,7 @@ const validIntegrityErrors = verifyPackageIntegrity({
 });
 
 if (validIntegrityErrors.length === 0) {
-  pass("actual package bytes match the catalog SHA-256 and size");
+  pass("actual package bytes match the catalog asset SHA-256 and size");
 } else {
   fail(`valid package bytes were rejected\n${formatErrors(validIntegrityErrors)}`);
 }
@@ -143,9 +145,38 @@ const wrongHashErrors = verifyPackageIntegrity({
 });
 
 if (wrongHashErrors.some((error) => error.code === "package-hash-mismatch")) {
-  pass("wrong package SHA-256 is rejected");
+  pass("wrong release asset SHA-256 is rejected");
 } else {
-  fail(`wrong package SHA-256 was not rejected\n${formatErrors(wrongHashErrors)}`);
+  fail(`wrong release asset SHA-256 was not rejected\n${formatErrors(wrongHashErrors)}`);
+}
+
+const projectionIdentity = {
+  gameId: "partybeam.reflex",
+  version: "1.2.0-beta.1",
+  manifestPath: path.join(PACKAGE_CONTRACT_DIR, "manifest.json"),
+  signaturePath: path.join(PACKAGE_CONTRACT_DIR, "signature.json"),
+};
+
+const validProjectionErrors = validatePackageProjection({
+  ...projectionIdentity,
+  catalogPath: path.join(PACKAGE_CONTRACT_DIR, "valid.catalog.json"),
+});
+
+if (validProjectionErrors.length === 0) {
+  pass("catalog projection matches the signed package manifest/envelope metadata");
+} else {
+  fail(`valid package projection was rejected\n${formatErrors(validProjectionErrors)}`);
+}
+
+const mismatchProjectionErrors = validatePackageProjection({
+  ...projectionIdentity,
+  catalogPath: path.join(PACKAGE_CONTRACT_DIR, "mismatch.catalog.json"),
+});
+
+if (mismatchProjectionErrors.some((error) => error.code === "projection-player-max")) {
+  pass("catalog/manifest compatibility disagreement is rejected");
+} else {
+  fail(`catalog/manifest mismatch was not rejected\n${formatErrors(mismatchProjectionErrors)}`);
 }
 
 if (failed) {
