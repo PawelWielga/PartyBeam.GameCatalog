@@ -10,7 +10,7 @@ This repository owns:
 
 - official catalog metadata;
 - exact release/distribution metadata;
-- stable vs test/prerelease classification;
+- stable vs test/prerelease classification and deterministic channel indexes;
 - public package asset locations;
 - transport integrity metadata for downloadable `.partybeam` assets;
 - the signed manifest/package hash and signature-envelope projection needed by publication tooling;
@@ -34,9 +34,15 @@ The signed package manifest remains authoritative for package-internal declarati
 catalog/
   v1/
     catalog.json
+    channels.json
+    channels/
+      stable.json
+      test.json
 schemas/
   v1/
     catalog.schema.json
+    channel-index.schema.json
+    channels.schema.json
     publication-provenance.schema.json
     publisher-trust-store.schema.json
   upstream/partybeam/v1/
@@ -46,20 +52,24 @@ trust/
 fixtures/
   v1/
     assets/
+    channels/
     integrity/
     package-contract/
     valid/
     invalid/
 docs/
   catalog-contract-v1.md
+  channel-indexes.md
   package-contract-alignment.md
   publisher-trust-store.md
   publication-workflow.md
   ci-policy.md
 tools/
+  generate-channel-indexes.mjs
   prepare-publication.mjs
   validate-catalog.mjs
   validate-catalog-semantics.mjs
+  validate-channel-indexes.mjs
   validate-fixtures.mjs
   validate-package-projection.mjs
   validate-package-signature.mjs
@@ -68,9 +78,7 @@ tools/
   verify-package-signature.mjs
 ```
 
-`catalog/v1/catalog.json` is the canonical v1 catalog document. Future incompatible catalog contracts must use a new versioned path rather than changing frozen v1 semantics in place.
-
-Stable/test channel-specific indexes are intentionally deferred to issue #5. The release model already carries deterministic channel classification so those indexes can be derived without redefining release identity.
+`catalog/v1/catalog.json` is the canonical v1 release document. Channel files are deterministic discovery projections and must never become a second source of package/integrity truth.
 
 ## Public URL conventions
 
@@ -78,6 +86,12 @@ PartyBeam clients may read the current v1 catalog directly from GitHub:
 
 ```text
 https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/catalog/v1/catalog.json
+```
+
+Channel discovery is available at:
+
+```text
+https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/catalog/v1/channels.json
 ```
 
 Published package URLs use public GitHub Release assets in this repository. The naming convention is:
@@ -119,6 +133,18 @@ Validate only the canonical live catalog:
 
 ```bash
 npm run validate
+```
+
+Regenerate stable/test discovery projections from the canonical catalog:
+
+```bash
+npm run generate-channels
+```
+
+Check that committed channel projections are exact deterministic derivatives of the catalog:
+
+```bash
+npm run validate-channels
 ```
 
 Validate a candidate against an older catalog to enforce immutable exact-release metadata:
@@ -163,6 +189,7 @@ The validation layer covers:
 - pinned PartyBeam manifest/signature-envelope schemas;
 - unique game identities and exact release versions;
 - stable/test SemVer consistency;
+- deterministic channel indexes with stable as default and test as explicit opt-in;
 - Game Contract range ordering and player-range correctness;
 - English runtime/catalog fallback required by package manifest v1;
 - required/optional capability consistency and derived Internet-access summary;
@@ -179,9 +206,17 @@ The validation layer covers:
 
 Publication-side signature verification uses `@noble/curves` P-256 with `prehash: false` because PartyBeam's .NET contract signs the already-computed `packageSha256` via `ECDsa.SignHash`. Full package verification still belongs to PartyBeam's canonical `GamePackageVerifier`, which additionally validates the actual component payload bytes.
 
+## Stable and test channels
+
+`catalog/v1/channels.json` explicitly declares `stable` as the default channel. Test is prerelease-only and requires opt-in.
+
+`stable.json` and `test.json` carry only game/version identities and `latestVersion`. PartyBeam resolves an exact version back into `catalog.json` for full release metadata, which prevents channel files from contradicting hashes or compatibility information.
+
+See `docs/channel-indexes.md`.
+
 ## Publication preparation
 
-Issue #4 has a deterministic local preparation path. It generates a reviewable catalog candidate and provenance record without mutating GitHub:
+Issue #4 has a deterministic local preparation path. It generates a reviewable catalog candidate, matching channel-index candidates and provenance record without mutating GitHub:
 
 ```bash
 npm run prepare-publication -- \
@@ -192,12 +227,13 @@ npm run prepare-publication -- \
   --trust-store trust/v1/publisher-keys.json \
   --published-at 2026-09-14T08:00:00Z \
   --output /tmp/catalog.candidate.json \
+  --channels-output-dir /tmp/catalog-v1-candidate \
   --provenance /tmp/publication.provenance.json
 ```
 
-Preparation derives the channel, Release tag/URL, asset hash/size, catalog metadata and compatibility projection from signed package inputs, verifies the signature against an active publisher key, then runs all currently available catalog/package consistency gates. Reusing an existing exact game/version is rejected.
+Preparation derives the channel, Release tag/URL, asset hash/size, catalog metadata and compatibility projection from signed package inputs, verifies the signature against an active publisher key, regenerates stable/test projections, then runs all currently available catalog/package consistency gates. Reusing an existing exact game/version is rejected.
 
-The generated provenance records `cryptographicSignatureVerified: true`, but also records `componentPayloadsVerified: false` and `fullPackageVerification: false`. That distinction is deliberate: until GameCatalog can invoke PartyBeam's canonical package verifier against extracted component bytes, **the candidate is still not authorization to create the public GitHub Release**.
+The generated provenance records `cryptographicSignatureVerified: true`, but also records `componentPayloadsVerified: false` and `fullPackageVerification: false`. It additionally binds SHA-256 hashes of the candidate catalog and all generated channel documents. Until GameCatalog can invoke PartyBeam's canonical package verifier against extracted component bytes, **the candidate is still not authorization to create the public GitHub Release**.
 
 See `docs/publication-workflow.md`.
 
