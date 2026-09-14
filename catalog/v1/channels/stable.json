@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "channel": "stable",
+  "sourceCatalogPath": "catalog/v1/catalog.json",
+  "games": []
+}
