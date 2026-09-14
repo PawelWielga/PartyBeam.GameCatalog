@@ -103,6 +103,7 @@ try {
 
   const outputPath = path.join(tempDir, "catalog.candidate.json");
   const provenancePath = path.join(tempDir, "publication.provenance.json");
+  const channelsOutputDir = path.join(tempDir, "channel-candidate");
 
   const prepared = preparePublication({
     catalogPath: CATALOG_PATH,
@@ -112,6 +113,7 @@ try {
     publishedAt: PUBLISHED_AT,
     outputPath,
     provenancePath,
+    channelsOutputDir,
     trustStorePath,
   });
 
@@ -130,6 +132,11 @@ try {
 
   const persistedCandidate = JSON.parse(fs.readFileSync(outputPath, "utf8"));
   const persistedProvenance = JSON.parse(fs.readFileSync(provenancePath, "utf8"));
+  const discoveryPath = path.join(channelsOutputDir, "channels.json");
+  const stablePath = path.join(channelsOutputDir, "channels/stable.json");
+  const testPath = path.join(channelsOutputDir, "channels/test.json");
+  const testChannel = JSON.parse(fs.readFileSync(testPath, "utf8"));
+
   if (
     persistedCandidate.games[0]?.gameId === "partybeam.reflex"
     && persistedProvenance.releaseTag === "game-partybeam.reflex-v1.2.0-beta.1"
@@ -138,10 +145,23 @@ try {
     && persistedProvenance.fullPackageVerification === false
     && persistedProvenance.trustStoreSha256 === fileSha256(trustStorePath)
     && persistedProvenance.candidateCatalogSha256 === fileSha256(outputPath)
+    && persistedProvenance.channelIndexes.discoverySha256 === fileSha256(discoveryPath)
+    && persistedProvenance.channelIndexes.stableSha256 === fileSha256(stablePath)
+    && persistedProvenance.channelIndexes.testSha256 === fileSha256(testPath)
   ) {
-    pass("publication provenance records trusted signature verification without overstating full package verification");
+    pass("publication provenance binds the catalog, trust store and exact generated channel projections");
   } else {
     fail("publication candidate/provenance output is incomplete or misleading");
+  }
+
+  if (
+    prepared.channelDocuments.stable.games.length === 0
+    && prepared.channelDocuments.test.games[0]?.latestVersion === "1.2.0-beta.1"
+    && testChannel.games[0]?.gameId === "partybeam.reflex"
+  ) {
+    pass("prerelease publication is prepared only in the test-channel candidate");
+  } else {
+    fail("publication preparation generated incorrect stable/test channel candidates");
   }
 
   let emptyProductionTrustRejected = false;
