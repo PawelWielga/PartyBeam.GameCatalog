@@ -4,6 +4,9 @@
   "private": true,
   "description": "Validation tooling for the official PartyBeam game catalog.",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "validate": "node tools/validate-catalog.mjs",
     "generate-channels": "node tools/generate-channel-indexes.mjs",
@@ -12,7 +15,8 @@
     "verify-package": "node tools/verify-package-integrity.mjs",
     "verify-package-signature": "node tools/verify-package-signature.mjs",
     "prepare-publication": "node tools/prepare-publication.mjs",
-    "test": "node tools/validate-semver.mjs && node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-package-contract-semantics.mjs && node tools/validate-package-signature.mjs && node tools/validate-publication-preparation.mjs && node tools/validate-channel-indexes.mjs && node tools/validate-release-lifecycle.mjs"
+    "authorize-publication": "node tools/authorize-publication.mjs",
+    "test": "node tools/validate-semver.mjs && node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-package-contract-semantics.mjs && node tools/validate-package-signature.mjs && node tools/validate-publication-preparation.mjs && node tools/validate-publication-authorization.mjs && node tools/validate-channel-indexes.mjs && node tools/validate-release-lifecycle.mjs"
   },
   "devDependencies": {
     "@noble/curves": "2.4.0",
