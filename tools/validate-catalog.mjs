@@ -4,6 +4,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { compareSemver, hasPrerelease } from "./semver.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
@@ -54,57 +55,6 @@ function buildSchemaValidator(schemaPath) {
   }
 
   return ajv.compile(schema);
-}
-
-function hasPrerelease(version) {
-  return version.split("+")[0].includes("-");
-}
-
-function parseSemVer(version) {
-  const withoutBuild = version.split("+", 1)[0];
-  const dashIndex = withoutBuild.indexOf("-");
-  const core = dashIndex >= 0 ? withoutBuild.slice(0, dashIndex) : withoutBuild;
-  const prerelease = dashIndex >= 0 ? withoutBuild.slice(dashIndex + 1).split(".") : [];
-  const [major, minor, patch] = core.split(".").map(Number);
-  return { major, minor, patch, prerelease };
-}
-
-function compareSemVer(leftVersion, rightVersion) {
-  const left = parseSemVer(leftVersion);
-  const right = parseSemVer(rightVersion);
-
-  for (const key of ["major", "minor", "patch"]) {
-    if (left[key] !== right[key]) {
-      return left[key] < right[key] ? -1 : 1;
-    }
-  }
-
-  if (left.prerelease.length === 0 && right.prerelease.length === 0) return 0;
-  if (left.prerelease.length === 0) return 1;
-  if (right.prerelease.length === 0) return -1;
-
-  const length = Math.max(left.prerelease.length, right.prerelease.length);
-  for (let index = 0; index < length; index += 1) {
-    const leftPart = left.prerelease[index];
-    const rightPart = right.prerelease[index];
-
-    if (leftPart === undefined) return -1;
-    if (rightPart === undefined) return 1;
-    if (leftPart === rightPart) continue;
-
-    const leftNumeric = /^\d+$/.test(leftPart);
-    const rightNumeric = /^\d+$/.test(rightPart);
-
-    if (leftNumeric && rightNumeric) {
-      return Number(leftPart) < Number(rightPart) ? -1 : 1;
-    }
-    if (leftNumeric !== rightNumeric) {
-      return leftNumeric ? -1 : 1;
-    }
-    return leftPart < rightPart ? -1 : 1;
-  }
-
-  return 0;
 }
 
 function validateOfficialReleaseUrl(assetUrl, fileName, instancePath) {
@@ -334,7 +284,7 @@ export function validateCatalogObject(
       }
 
       const contractRange = release.compatibility.gameContractApi;
-      if (compareSemVer(contractRange.minInclusive, contractRange.maxExclusive) >= 0) {
+      if (compareSemver(contractRange.minInclusive, contractRange.maxExclusive) >= 0) {
         errors.push(
           issue(
             "game-contract-range",
