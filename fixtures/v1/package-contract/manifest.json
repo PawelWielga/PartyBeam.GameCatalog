@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "gameId": "partybeam.reflex",
+  "version": "1.2.0-beta.1",
+  "publisher": {
+    "id": "partybeam",
+    "displayName": "PartyBeam"
+  },
+  "gameContract": {
+    "minimumVersion": "1.0.0",
+    "maximumVersionExclusive": "2.0.0"
+  },
+  "players": {
+    "minimum": 2,
+    "maximum": 8
+  },
+  "controllerTopology": "onePhonePerPlayer",
+  "components": [
+    {
+      "id": "tv",
+      "kind": "tv",
+      "releaseVersion": "1.2.0-beta.1",
+      "artifactPath": "components/tv.zip",
+      "entryPoint": "index.html",
+      "sha256": "7af58fb9e40c963e9c1406867a755b4f39ba1dc366b0de5f012327c7fdbeb149",
+      "runtimeLocales": [
+        "en",
+        "pl"
+      ]
+    },
+    {
+      "id": "android-controller",
+      "kind": "androidController",
+      "releaseVersion": "1.2.0-beta.1",
+      "artifactPath": "components/android.zip",
+      "entryPoint": "index.html",
+      "sha256": "a6e4ba7b9eb602eadaed21406cfc9429a87d6e740855096c22d3cc77e3b6ac3c",
+      "runtimeLocales": [
+        "en",
+        "pl"
+      ]
+    },
+    {
+      "id": "browser-controller",
+      "kind": "browserController",
+      "releaseVersion": "1.2.0-beta.1",
+      "artifactPath": "components/browser.zip",
+      "entryPoint": "index.html",
+      "sha256": "fd5829321a5b76ca4faeff6c7633e12d4d9bd87f149ac8783ca15afc7db6c77c",
+      "runtimeLocales": [
+        "en",
+        "pl"
+      ]
+    }
+  ],
+  "catalogLocales": [
+    "en",
+    "pl"
+  ],
+  "catalog": {
+    "canonicalTitle": "Reflex",
+    "localized": {
+      "en": {
+        "shortDescription": "Fast reactions on a shared screen.",
+        "instructions": "Follow the TV and react on your controller."
+      },
+      "pl": {
+        "shortDescription": "Szybka gra refleksowa na wspólnym ekranie.",
+        "instructions": "Śledź ekran TV i reaguj na kontrolerze."
+      }
+    },
+    "supportUrl": "https://example.com/partybeam/reflex/support"
+  },
+  "capabilities": {
+    "required": [
+      "haptics"
+    ],
+    "optional": [
+      "internetAccess"
+    ]
+  },
+  "network": {
+    "outboundAllowlist": [
+      "https://api.example.com/reflex/"
+    ]
+  },
+  "supportsStandbyResume": true
+}
