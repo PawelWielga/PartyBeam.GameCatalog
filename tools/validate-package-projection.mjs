@@ -2,9 +2,21 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 
+const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(TOOL_DIR, "..");
+const MANIFEST_SCHEMA_PATH = path.join(
+  REPO_ROOT,
+  "schemas/upstream/partybeam/v1/game-package-manifest.schema.json",
+);
+const SIGNATURE_SCHEMA_PATH = path.join(
+  REPO_ROOT,
+  "schemas/upstream/partybeam/v1/game-package-signature-envelope.schema.json",
+);
 const SIGNATURE_ALGORITHM = "ecdsa-p256-sha256-p1363";
 const SURFACE_BY_COMPONENT_KIND = new Map([
   ["tv", "tv"],
@@ -25,6 +37,30 @@ function readDocument(filePath) {
   return { bytes, value: JSON.parse(bytes.toString("utf8")) };
 }
 
+function readJson(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function buildSchemaValidator(schemaPath) {
+  const ajv = new Ajv2020({ allErrors: true, strict: true });
+  addFormats(ajv);
+  return ajv.compile(readJson(schemaPath));
+}
+
+function schemaErrors(validate, value, prefix) {
+  if (validate(value)) {
+    return [];
+  }
+
+  return (validate.errors ?? []).map((error) =>
+    issue(
+      `${prefix}-schema-${error.keyword}`,
+      error.instancePath || "/",
+      error.message ?? "schema validation failed",
+    ),
+  );
+}
+
 function sha256(bytes) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
 }
@@ -42,21 +78,27 @@ function commonRuntimeLocales(components) {
     return [];
   }
 
-  const first = new Set(components[0].runtimeLocales ?? []);
+  const common = new Set(components[0].runtimeLocales ?? []);
   for (const component of components.slice(1)) {
     const current = new Set(component.runtimeLocales ?? []);
-    for (const locale of [...first]) {
+    for (const locale of [...common]) {
       if (!current.has(locale)) {
-        first.delete(locale);
+        common.delete(locale);
       }
     }
   }
-  return [...first];
+  return [...common];
+}
+
+function compareOrdinal(left, right) {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
 }
 
 function logicalPackageSha256(manifestSha256, components) {
   const componentLines = [...components]
-    .sort((left, right) => left.artifactPath.localeCompare(right.artifactPath, "en", { sensitivity: "variant" }))
+    .sort((left, right) => compareOrdinal(left.artifactPath, right.artifactPath))
     .map(
       (component) =>
         `component:${component.kind}:${component.artifactPath}:${component.sha256.toLowerCase()}`,
@@ -100,6 +142,31 @@ function compareSet(errors, code, instancePath, actual, expected) {
   }
 }
 
+function validateSignatureEncoding(signature, errors) {
+  const encoded = signature.valueBase64 ?? "";
+  if (!/^[A-Za-z0-9+/]{86}==$/.test(encoded)) {
+    errors.push(
+      issue(
+        "projection-signature-encoding",
+        "/signature/valueBase64",
+        "P-256 P1363 signature must be canonical Base64 for exactly 64 bytes",
+      ),
+    );
+    return;
+  }
+
+  const bytes = Buffer.from(encoded, "base64");
+  if (bytes.length !== 64 || bytes.toString("base64") !== encoded) {
+    errors.push(
+      issue(
+        "projection-signature-size",
+        "/signature/valueBase64",
+        "P-256 P1363 signature must decode to exactly 64 bytes",
+      ),
+    );
+  }
+}
+
 export function validatePackageProjection({
   catalogPath,
   gameId,
@@ -114,9 +181,17 @@ export function validatePackageProjection({
     return catalogErrors.map((error) => ({ ...error, code: `catalog-${error.code}` }));
   }
 
-  const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+  const catalog = readJson(catalogPath);
   const { bytes: manifestBytes, value: manifest } = readDocument(manifestPath);
   const { value: envelope } = readDocument(signaturePath);
+
+  const manifestValidator = buildSchemaValidator(MANIFEST_SCHEMA_PATH);
+  const signatureValidator = buildSchemaValidator(SIGNATURE_SCHEMA_PATH);
+  errors.push(...schemaErrors(manifestValidator, manifest, "manifest"));
+  errors.push(...schemaErrors(signatureValidator, envelope, "signature"));
+  if (errors.length > 0) {
+    return errors;
+  }
 
   const game = catalog.games.find((candidate) => candidate.gameId === gameId);
   if (!game) {
@@ -136,13 +211,13 @@ export function validatePackageProjection({
 
   compareValue(errors, "projection-game-id", "/gameId", game.gameId, manifest.gameId);
   compareValue(errors, "projection-release-version", "/version", release.version, manifest.version);
-  compareValue(errors, "projection-publisher-id", "/publisher/id", game.publisher.id, manifest.publisher?.id);
+  compareValue(errors, "projection-publisher-id", "/publisher/id", game.publisher.id, manifest.publisher.id);
   compareValue(
     errors,
     "projection-publisher-display-name",
     "/publisher/displayName",
     game.publisher.displayName,
-    manifest.publisher?.displayName,
+    manifest.publisher.displayName,
   );
 
   const manifestHash = sha256(manifestBytes);
@@ -150,7 +225,7 @@ export function validatePackageProjection({
     errors,
     "projection-manifest-hash-envelope",
     "/package/manifestSha256",
-    envelope.manifestSha256,
+    envelope.manifestSha256.toLowerCase(),
     manifestHash,
   );
   compareValue(
@@ -161,12 +236,12 @@ export function validatePackageProjection({
     manifestHash,
   );
 
-  const logicalHash = logicalPackageSha256(manifestHash, manifest.components ?? []);
+  const logicalHash = logicalPackageSha256(manifestHash, manifest.components);
   compareValue(
     errors,
     "projection-package-hash-envelope",
     "/package/packageSha256",
-    envelope.packageSha256,
+    envelope.packageSha256.toLowerCase(),
     logicalHash,
   );
   compareValue(
@@ -177,17 +252,7 @@ export function validatePackageProjection({
     logicalHash,
   );
 
-  if (envelope.schemaVersion !== 1) {
-    errors.push(
-      issue(
-        "projection-envelope-schema",
-        "/signature/schemaVersion",
-        `unsupported signature envelope schemaVersion '${envelope.schemaVersion}'`,
-      ),
-    );
-  }
-
-  const signature = envelope.signature ?? {};
+  const signature = envelope.signature;
   if (signature.algorithm !== SIGNATURE_ALGORITHM) {
     errors.push(
       issue(
@@ -197,22 +262,7 @@ export function validatePackageProjection({
       ),
     );
   }
-
-  let signatureBytes = null;
-  try {
-    signatureBytes = Buffer.from(signature.valueBase64 ?? "", "base64");
-  } catch {
-    signatureBytes = null;
-  }
-  if (!signatureBytes || signatureBytes.length !== 64) {
-    errors.push(
-      issue(
-        "projection-signature-size",
-        "/signature/valueBase64",
-        "P-256 P1363 signature must decode to exactly 64 bytes",
-      ),
-    );
-  }
+  validateSignatureEncoding(signature, errors);
 
   compareValue(
     errors,
@@ -241,28 +291,28 @@ export function validatePackageProjection({
     "projection-game-contract-min",
     "/compatibility/gameContractApi/minInclusive",
     release.compatibility.gameContractApi.minInclusive,
-    manifest.gameContract?.minimumVersion,
+    manifest.gameContract.minimumVersion,
   );
   compareValue(
     errors,
     "projection-game-contract-max",
     "/compatibility/gameContractApi/maxExclusive",
     release.compatibility.gameContractApi.maxExclusive,
-    manifest.gameContract?.maximumVersionExclusive,
+    manifest.gameContract.maximumVersionExclusive,
   );
   compareValue(
     errors,
     "projection-player-min",
     "/compatibility/playerCount/min",
     release.compatibility.playerCount.min,
-    manifest.players?.minimum,
+    manifest.players.minimum,
   );
   compareValue(
     errors,
     "projection-player-max",
     "/compatibility/playerCount/max",
     release.compatibility.playerCount.max,
-    manifest.players?.maximum,
+    manifest.players.maximum,
   );
 
   const manifestTopology = TOPOLOGY_BY_MANIFEST.get(manifest.controllerTopology);
@@ -274,7 +324,7 @@ export function validatePackageProjection({
     manifestTopology ? [manifestTopology] : [],
   );
 
-  const surfaces = (manifest.components ?? [])
+  const surfaces = manifest.components
     .map((component) => SURFACE_BY_COMPONENT_KIND.get(component.kind))
     .filter(Boolean);
   compareSet(
@@ -289,35 +339,35 @@ export function validatePackageProjection({
     "projection-runtime-locales",
     "/compatibility/runtimeLocales",
     release.compatibility.runtimeLocales,
-    commonRuntimeLocales(manifest.components ?? []),
+    commonRuntimeLocales(manifest.components),
   );
   compareSet(
     errors,
     "projection-catalog-locales",
     "/compatibility/catalogLocales",
     release.compatibility.catalogLocales,
-    manifest.catalogLocales ?? [],
+    manifest.catalogLocales,
   );
   compareSet(
     errors,
     "projection-required-capabilities",
     "/compatibility/capabilities/required",
     release.compatibility.capabilities.required,
-    manifest.capabilities?.required ?? [],
+    manifest.capabilities.required,
   );
   compareSet(
     errors,
     "projection-optional-capabilities",
     "/compatibility/capabilities/optional",
     release.compatibility.capabilities.optional,
-    manifest.capabilities?.optional ?? [],
+    manifest.capabilities.optional,
   );
   compareValue(
     errors,
     "projection-internet-access",
     "/compatibility/capabilities/internetAccess",
     release.compatibility.capabilities.internetAccess,
-    deriveInternetAccess(manifest.capabilities ?? {}),
+    deriveInternetAccess(manifest.capabilities),
   );
   compareValue(
     errors,
@@ -327,7 +377,7 @@ export function validatePackageProjection({
     manifest.supportsStandbyResume,
   );
 
-  if (!manifest.catalogLocales?.includes(game.catalogMetadata.defaultLocale)) {
+  if (!manifest.catalogLocales.includes(game.catalogMetadata.defaultLocale)) {
     errors.push(
       issue(
         "projection-default-locale",
@@ -342,11 +392,11 @@ export function validatePackageProjection({
     "projection-support-url",
     "/catalogMetadata/supportUrl",
     game.catalogMetadata.supportUrl ?? null,
-    manifest.catalog?.supportUrl ?? null,
+    manifest.catalog.supportUrl ?? null,
   );
 
-  for (const [locale, metadata] of Object.entries(game.catalogMetadata.locales ?? {})) {
-    const manifestMetadata = manifest.catalog?.localized?.[locale];
+  for (const [locale, metadata] of Object.entries(game.catalogMetadata.locales)) {
+    const manifestMetadata = manifest.catalog.localized[locale];
     if (!manifestMetadata) {
       errors.push(
         issue(
@@ -374,7 +424,7 @@ export function validatePackageProjection({
     );
   }
 
-  for (const component of manifest.components ?? []) {
+  for (const component of manifest.components) {
     if (component.releaseVersion !== manifest.version) {
       errors.push(
         issue(
