@@ -15,6 +15,7 @@
     "baselineCatalogSha256",
     "candidateCatalogSha256",
     "trustStoreSha256",
+    "channelIndexes",
     "releaseAsset",
     "manifestSha256",
     "packageSha256",
@@ -44,6 +45,16 @@
     "baselineCatalogSha256": { "$ref": "#/$defs/sha256" },
     "candidateCatalogSha256": { "$ref": "#/$defs/sha256" },
     "trustStoreSha256": { "$ref": "#/$defs/sha256" },
+    "channelIndexes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discoverySha256", "stableSha256", "testSha256"],
+      "properties": {
+        "discoverySha256": { "$ref": "#/$defs/sha256" },
+        "stableSha256": { "$ref": "#/$defs/sha256" },
+        "testSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
     "releaseAsset": {
       "type": "object",
       "additionalProperties": false,
