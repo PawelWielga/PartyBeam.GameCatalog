@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/schemas/v1/publisher-trust-store.schema.json",
+  "title": "PartyBeam Official Publisher Trust Store v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "keys"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "keys": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/key" }
+    }
+  },
+  "$defs": {
+    "stableIdentifier": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$"
+    },
+    "key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "publisherId", "algorithm", "status", "publicKeyPem"],
+      "properties": {
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "publisherId": { "$ref": "#/$defs/stableIdentifier" },
+        "algorithm": { "const": "ecdsa-p256-sha256-p1363" },
+        "status": {
+          "enum": ["active", "retired", "revoked"]
+        },
+        "publicKeyPem": {
+          "type": "string",
+          "pattern": "^-----BEGIN PUBLIC KEY-----[\\s\\S]+-----END PUBLIC KEY-----\\s*$"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}
