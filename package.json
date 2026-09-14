@@ -1,0 +1,15 @@
+{
+  "name": "partybeam-game-catalog",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Validation tooling for the official PartyBeam game catalog.",
+  "type": "module",
+  "scripts": {
+    "validate": "node tools/validate-catalog.mjs",
+    "test": "node tools/validate-fixtures.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}
