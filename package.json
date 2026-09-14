@@ -12,7 +12,7 @@
     "verify-package": "node tools/verify-package-integrity.mjs",
     "verify-package-signature": "node tools/verify-package-signature.mjs",
     "prepare-publication": "node tools/prepare-publication.mjs",
-    "test": "node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-package-signature.mjs && node tools/validate-publication-preparation.mjs && node tools/validate-channel-indexes.mjs"
+    "test": "node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-package-signature.mjs && node tools/validate-publication-preparation.mjs && node tools/validate-channel-indexes.mjs && node tools/validate-release-lifecycle.mjs"
   },
   "devDependencies": {
     "@noble/curves": "2.4.0",
