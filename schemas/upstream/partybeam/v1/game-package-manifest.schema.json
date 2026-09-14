@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://partybeam.dev/schemas/game-package-manifest.v1.schema.json",
+  "title": "PartyBeam Game Package Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "gameId",
+    "version",
+    "publisher",
+    "gameContract",
+    "players",
+    "controllerTopology",
+    "components",
+    "catalogLocales",
+    "catalog",
+    "capabilities",
+    "network",
+    "supportsStandbyResume"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "gameId": { "$ref": "#/$defs/stableIdentifier" },
+    "version": { "$ref": "#/$defs/semver" },
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableIdentifier" },
+        "displayName": { "type": "string", "minLength": 1 }
+      }
+    },
+    "gameContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimumVersion", "maximumVersionExclusive"],
+      "properties": {
+        "minimumVersion": { "$ref": "#/$defs/semver" },
+        "maximumVersionExclusive": { "$ref": "#/$defs/semver" }
+      }
+    },
+    "players": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "type": "integer", "minimum": 1 },
+        "maximum": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "controllerTopology": { "enum": ["onePhonePerPlayer", "sharedPhone"] },
+    "components": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "catalogLocales": { "$ref": "#/$defs/locales" },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonicalTitle", "localized"],
+      "properties": {
+        "canonicalTitle": { "type": "string", "minLength": 1 },
+        "localized": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "$ref": "#/$defs/locale" },
+          "additionalProperties": { "$ref": "#/$defs/localizedCatalogMetadata" }
+        },
+        "supportUrl": { "type": ["string", "null"] }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "optional"],
+      "properties": {
+        "required": { "$ref": "#/$defs/capabilityList" },
+        "optional": { "$ref": "#/$defs/capabilityList" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outboundAllowlist"],
+      "properties": {
+        "outboundAllowlist": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "supportsStandbyResume": { "type": "boolean" }
+  },
+  "$defs": {
+    "stableIdentifier": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+    },
+    "sha256": { "type": "string", "pattern": "^[0-9A-Fa-f]{64}$" },
+    "locale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" },
+    "locales": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/locale" }
+    },
+    "safeRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*\\\\)(?!.*:)[^/]+(?:/[^/]+)*$"
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "releaseVersion", "artifactPath", "entryPoint", "sha256", "runtimeLocales"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableIdentifier" },
+        "kind": { "enum": ["tv", "androidController", "browserController"] },
+        "releaseVersion": { "$ref": "#/$defs/semver" },
+        "artifactPath": { "$ref": "#/$defs/safeRelativePath" },
+        "entryPoint": { "$ref": "#/$defs/safeRelativePath" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "runtimeLocales": { "$ref": "#/$defs/locales" }
+      }
+    },
+    "localizedCatalogMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shortDescription"],
+      "properties": {
+        "title": { "type": ["string", "null"] },
+        "shortDescription": { "type": "string" },
+        "longDescription": { "type": ["string", "null"] },
+        "instructions": { "type": ["string", "null"] }
+      }
+    },
+    "capabilityList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["camera", "microphone", "location", "gyroscope", "accelerometer", "haptics", "internetAccess"]
+      }
+    }
+  }
+}
