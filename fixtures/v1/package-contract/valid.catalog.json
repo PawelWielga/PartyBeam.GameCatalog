@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "games": [
+    {
+      "gameId": "partybeam.reflex",
+      "publisher": {
+        "id": "partybeam",
+        "displayName": "PartyBeam",
+        "kind": "first-party"
+      },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "supportUrl": "https://example.com/partybeam/reflex/support",
+        "locales": {
+          "en": {
+            "title": "Reflex",
+            "summary": "Fast reactions on a shared screen."
+          },
+          "pl": {
+            "title": "Reflex",
+            "summary": "Szybka gra refleksowa na wspólnym ekranie."
+          }
+        }
+      },
+      "releases": [
+        {
+          "version": "1.2.0-beta.1",
+          "channel": "test",
+          "publicationState": "published",
+          "publishedAt": "2026-09-14T07:00:00Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.reflex-v1.2.0-beta.1/partybeam.reflex-1.2.0-beta.1.partybeam",
+            "fileName": "partybeam.reflex-1.2.0-beta.1.partybeam",
+            "sizeBytes": 123456,
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "3333333333333333333333333333333333333333333333333333333333333333"
+            },
+            "manifestSha256": "cfd140dbd3443dcea67ac78c8a31ba3c7c5f8668410c8be8b91c192f1e26b169",
+            "packageSha256": "41e0c80fc3c8d970059fbf2f1feb879dd922de751433622bc0e0801e1da77074",
+            "signature": {
+              "algorithm": "ecdsa-p256-sha256-p1363",
+              "keyId": "partybeam-ci-example-key",
+              "valueBase64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+            }
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en", "pl"],
+            "catalogLocales": ["en", "pl"],
+            "playerCount": {
+              "min": 2,
+              "max": 8
+            },
+            "controllerTopologies": ["one-phone-per-player"],
+            "capabilities": {
+              "required": ["haptics"],
+              "optional": ["internetAccess"],
+              "internetAccess": "optional"
+            },
+            "standbyResumeSupported": true
+          }
+        }
+      ]
+    }
+  ]
+}
