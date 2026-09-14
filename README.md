@@ -36,6 +36,8 @@ schemas/
     catalog.schema.json
 fixtures/
   v1/
+    assets/
+    integrity/
     valid/
     invalid/
 docs/
@@ -43,6 +45,7 @@ docs/
 tools/
   validate-catalog.mjs
   validate-fixtures.mjs
+  verify-package-integrity.mjs
 .github/workflows/
   catalog-validation.yml
 ```
@@ -93,6 +96,18 @@ Validate a candidate against an older catalog to enforce immutable exact-release
 npm run validate -- --baseline path/to/previous-catalog.json
 ```
 
+Verify actual package bytes against one exact catalog release:
+
+```bash
+npm run verify-package -- \
+  --catalog path/to/catalog.json \
+  --game partybeam.example \
+  --version 1.2.3 \
+  --package path/to/partybeam.example-1.2.3.partybeam
+```
+
+Package-byte verification checks the expected filename, SHA-256 digest and `sizeBytes` when present. A hash or size disagreement fails closed.
+
 The validator currently enforces:
 
 - JSON Schema 2020-12 correctness;
@@ -105,11 +120,12 @@ The validator currently enforces:
 - valid player-count ranges;
 - no capability declared as both required and optional;
 - first-party-only MVP publication policy while retaining schema support for future approved external publishers;
-- immutable package and compatibility metadata for an already known `(gameId, version)` when a baseline catalog is supplied.
+- immutable package and compatibility metadata for an already known `(gameId, version)` when a baseline catalog is supplied;
+- SHA-256 and size verification of actual package bytes when a package file is supplied.
 
-GitHub Actions runs the same checks on relevant pull requests and pushes to `main`, including a comparison with the base/previous catalog when available.
+GitHub Actions runs the same catalog/fixture checks on relevant pull requests and pushes to `main`, including a comparison with the base/previous catalog when available. The fixture suite also verifies real package bytes and proves that a deliberately wrong SHA-256 is rejected.
 
-Cryptographic verification of downloaded package bytes, manifest/catalog field equality and approved signing-key verification require the final package/manifest contract owned by `PawelWielga/PartyBeam#4`. Until that contract is implemented, the validator fails closed on missing/malformed verification metadata but does not pretend that metadata-shape validation proves package authenticity.
+Cryptographic signature verification, signed-manifest parsing and catalog/manifest field equality still require the final package/manifest contract owned by `PawelWielga/PartyBeam#4`. Until that contract is implemented, the validator fails closed on missing/malformed signature metadata but does not pretend that metadata-shape validation proves package authenticity.
 
 Validation uses `ajv` and `ajv-formats`, both permissive MIT-licensed dependencies suitable for commercial use.
 
