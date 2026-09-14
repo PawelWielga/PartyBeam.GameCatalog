@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "manifestSha256": "cfd140dbd3443dcea67ac78c8a31ba3c7c5f8668410c8be8b91c192f1e26b169",
+  "packageSha256": "41e0c80fc3c8d970059fbf2f1feb879dd922de751433622bc0e0801e1da77074",
+  "signature": {
+    "algorithm": "Ed25519",
+    "keyId": "partybeam-ci-example-key",
+    "valueBase64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  }
+}
