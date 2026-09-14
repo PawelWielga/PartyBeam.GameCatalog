@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/schemas/v1/channels.schema.json",
+  "title": "PartyBeam Channel Discovery v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogId", "defaultChannel", "channels"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "catalogId": { "const": "partybeam-official" },
+    "defaultChannel": { "const": "stable" },
+    "channels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stable", "test"],
+      "properties": {
+        "stable": {
+          "$ref": "#/$defs/channelDefinition"
+        },
+        "test": {
+          "$ref": "#/$defs/channelDefinition"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "channelDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["indexPath", "prerelease", "optInRequired"],
+      "properties": {
+        "indexPath": {
+          "type": "string",
+          "pattern": "^catalog/v1/channels/(stable|test)\\.json$"
+        },
+        "prerelease": { "type": "boolean" },
+        "optInRequired": { "type": "boolean" }
+      }
+    }
+  }
+}
