@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/schemas/v1/publication-provenance.schema.json",
+  "title": "PartyBeam Game Catalog Publication Provenance v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "gameId",
+    "version",
+    "channel",
+    "releaseTag",
+    "assetUrl",
+    "publishedAt",
+    "baselineCatalogSha256",
+    "candidateCatalogSha256",
+    "releaseAsset",
+    "manifestSha256",
+    "packageSha256",
+    "signature",
+    "partyBeamPackageContract",
+    "cryptographicSignatureVerified",
+    "cryptographicVerificationNote"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "gameId": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+    },
+    "channel": { "enum": ["stable", "test"] },
+    "releaseTag": { "type": "string", "minLength": 1 },
+    "assetUrl": { "type": "string", "format": "uri", "pattern": "^https://github\\.com/PawelWielga/PartyBeam\\.GameCatalog/releases/download/" },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "baselineCatalogSha256": { "$ref": "#/$defs/sha256" },
+    "candidateCatalogSha256": { "$ref": "#/$defs/sha256" },
+    "releaseAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fileName", "sizeBytes", "sha256"],
+      "properties": {
+        "fileName": { "type": "string", "pattern": "\\.partybeam$" },
+        "sizeBytes": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "manifestSha256": { "$ref": "#/$defs/sha256" },
+    "packageSha256": { "$ref": "#/$defs/sha256" },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "keyId"],
+      "properties": {
+        "algorithm": { "const": "ecdsa-p256-sha256-p1363" },
+        "keyId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "partyBeamPackageContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "pullRequest", "ref", "commit"],
+      "properties": {
+        "repository": { "const": "PawelWielga/PartyBeam" },
+        "pullRequest": { "type": "integer", "minimum": 1 },
+        "ref": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+      }
+    },
+    "cryptographicSignatureVerified": { "type": "boolean" },
+    "cryptographicVerificationNote": { "type": "string", "minLength": 1 }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}
