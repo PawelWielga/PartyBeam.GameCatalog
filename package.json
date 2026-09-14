@@ -8,7 +8,8 @@
     "validate": "node tools/validate-catalog.mjs",
     "validate-package-projection": "node tools/validate-package-projection.mjs",
     "verify-package": "node tools/verify-package-integrity.mjs",
-    "test": "node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs"
+    "prepare-publication": "node tools/prepare-publication.mjs",
+    "test": "node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-publication-preparation.mjs"
   },
   "devDependencies": {
     "ajv": "8.20.0",
