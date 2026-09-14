@@ -55,9 +55,38 @@
     },
     "components": {
       "type": "array",
-      "minItems": 3,
+      "minItems": 2,
       "maxItems": 3,
-      "items": { "$ref": "#/$defs/component" }
+      "items": { "$ref": "#/$defs/component" },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": { "kind": { "const": "tv" } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": { "kind": { "const": "androidController" } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": { "kind": { "const": "browserController" } }
+          },
+          "minContains": 0,
+          "maxContains": 1
+        }
+      ]
     },
     "catalogLocales": {
       "$ref": "#/$defs/locales"
