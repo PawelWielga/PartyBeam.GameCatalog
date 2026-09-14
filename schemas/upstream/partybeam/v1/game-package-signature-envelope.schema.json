@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://partybeam.dev/schemas/game-package-signature-envelope.v1.schema.json",
+  "title": "PartyBeam Game Package Signature Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "manifestSha256", "packageSha256", "signature"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "manifestSha256": { "$ref": "#/$defs/sha256" },
+    "packageSha256": { "$ref": "#/$defs/sha256" },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "keyId", "valueBase64"],
+      "properties": {
+        "algorithm": { "const": "ecdsa-p256-sha256-p1363" },
+        "keyId": { "type": "string", "minLength": 1 },
+        "valueBase64": { "type": "string", "minLength": 1, "contentEncoding": "base64" }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9A-Fa-f]{64}$" }
+  }
+}
