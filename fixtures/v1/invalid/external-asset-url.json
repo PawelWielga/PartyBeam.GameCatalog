@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "partybeam-official",
+  "games": [
+    {
+      "gameId": "partybeam.reflex",
+      "publisher": {"id": "partybeam", "displayName": "PartyBeam", "kind": "first-party"},
+      "catalogMetadata": {"defaultLocale": "en", "locales": {"en": {"title": "Reflex", "summary": "Fixture"}}},
+      "releases": [
+        {
+          "version": "0.1.0",
+          "channel": "stable",
+          "publicationState": "published",
+          "publishedAt": "2026-09-13T20:00:00Z",
+          "package": {
+            "assetUrl": "https://example.com/partybeam.reflex-0.1.0.partybeam",
+            "fileName": "partybeam.reflex-0.1.0.partybeam",
+            "integrity": {"algorithm": "SHA-256", "digest": "1111111111111111111111111111111111111111111111111111111111111111"},
+            "signature": {"algorithm": "Ed25519", "keyId": "partybeam-ci-example-key", "valueBase64": "AAAAAAAAAAAAAAAAAAAAAA=="},
+            "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "compatibility": {
+            "gameContractApi": {"minInclusive": "1.0.0", "maxExclusive": "2.0.0"},
+            "surfaces": ["tv", "android", "browser"],
+            "runtimeLocales": ["en"],
+            "catalogLocales": ["en"],
+            "playerCount": {"min": 2, "max": 8},
+            "controllerTopologies": ["one-phone-per-player"],
+            "capabilities": {"required": [], "optional": ["haptics"], "internetAccess": "none"},
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    }
+  ]
+}
