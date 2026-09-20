@@ -1,4 +1,13 @@
 {
   "schemaVersion": 1,
-  "keys": []
+  "keys": [
+    {
+      "keyId": "partybeam-placeholder-2026-09",
+      "publisherId": "partybeam",
+      "algorithm": "ecdsa-p256-sha256-p1363",
+      "status": "active",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEd8QH5acQwcWmoxUOUBflAlISHJoy\nKwjzwsdMGv8ZhoYghfQSU1yaW3hIiLVYLtwYsVLTvjlSXqlLg8qXjoGnDw==\n-----END PUBLIC KEY-----",
+      "comment": "Temporary first-party key for the PartyBeam Placeholder integration package. Replace through the documented key lifecycle before publishing further games."
+    }
+  ]
 }

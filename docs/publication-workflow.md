@@ -10,7 +10,7 @@ The repository currently implements deterministic publication preparation plus a
 
 `tools/authorize-publication.mjs` is a separate final gate intended to run immediately before any future GitHub Release mutation. It independently rechecks the candidate catalog, immutable baseline, package bytes, publisher signature/trust state and channel projections. It has no force/bypass option.
 
-The committed production trust store is intentionally empty until a real PartyBeam production public signing key is provisioned, so production publication currently fails closed.
+The committed production trust store currently contains the public key for the one-off `partybeam.placeholder` integration release. Its private key is not committed and it is not the long-lived key for future game publication.
 
 The remaining blocker to a real GitHub Release mutation is full verification of the actual component payload bytes using PartyBeam's canonical `GamePackageVerifier`. PartyBeam PR #19 defines that verifier, but the canonical `.partybeam` container/extraction path is not yet integrated with the publication tooling.
 

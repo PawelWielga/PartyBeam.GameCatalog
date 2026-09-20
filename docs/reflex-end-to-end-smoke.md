@@ -14,7 +14,7 @@ At the time this document was added:
 - Reflex issue #7 `[06] Integrate synchronized timing and fairness policy` is still open and blocks producer publication issue #8;
 - PartyBeam package-contract PR #19 is still draft;
 - PartyBeam catalog-consumer issue #5 is still open;
-- the GameCatalog production publisher trust store is intentionally empty until a real PartyBeam public signing key is provisioned;
+- the GameCatalog trust store contains only the placeholder integration key; Reflex still requires a separately managed production publisher key;
 - GitHub Actions remain disabled until the self-hosted runner is configured.
 
 No fake release or fixture package may be substituted for these prerequisites.

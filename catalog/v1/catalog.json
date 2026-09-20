@@ -1,5 +1,84 @@
 {
   "schemaVersion": 1,
   "catalogId": "partybeam-official",
-  "games": []
+  "games": [
+    {
+      "gameId": "partybeam.placeholder",
+      "publisher": {
+        "id": "partybeam",
+        "displayName": "PartyBeam",
+        "kind": "first-party"
+      },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "locales": {
+          "en": {
+            "title": "PartyBeam Placeholder",
+            "summary": "A tiny first-party package for validating PartyBeam catalog and runtime integration."
+          },
+          "pl": {
+            "title": "Gra testowa PartyBeam",
+            "summary": "Mała paczka first-party do sprawdzania katalogu i środowiska uruchomieniowego PartyBeam."
+          }
+        },
+        "supportUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/issues"
+      },
+      "releases": [
+        {
+          "version": "0.1.0",
+          "channel": "stable",
+          "publicationState": "published",
+          "publishedAt": "2026-09-20T17:43:51Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.placeholder-v0.1.0/partybeam.placeholder-0.1.0.partybeam",
+            "fileName": "partybeam.placeholder-0.1.0.partybeam",
+            "sizeBytes": 6290,
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "f4923a64f1599aa8690d1bc8fc02c3c3f4afb26003f2c186b4c77ac13ee0234c"
+            },
+            "manifestSha256": "bc926e7bf6a12743342358704093af3a634c7a0924f608c7e1c747ff3052d63c",
+            "packageSha256": "3aa981728c00fe91e65d008203da6ea7564191dcb6240c96b6cba71a8ff17c59",
+            "signature": {
+              "algorithm": "ecdsa-p256-sha256-p1363",
+              "keyId": "partybeam-placeholder-2026-09",
+              "valueBase64": "HvDczN6m1LF2nW3FKB8z2oxOZoCKThWfTfBmmJVWSZuIga5xuEVr17u5kjnG8I06HwxpookE1Y0GAfcLHFBqCw=="
+            }
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": [
+              "tv",
+              "android",
+              "browser"
+            ],
+            "runtimeLocales": [
+              "en",
+              "pl"
+            ],
+            "catalogLocales": [
+              "en",
+              "pl"
+            ],
+            "playerCount": {
+              "min": 1,
+              "max": 8
+            },
+            "controllerTopologies": [
+              "one-phone-per-player"
+            ],
+            "capabilities": {
+              "required": [],
+              "optional": [],
+              "internetAccess": "none"
+            },
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    }
+  ]
 }

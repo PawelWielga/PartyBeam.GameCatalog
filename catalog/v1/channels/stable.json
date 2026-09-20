@@ -3,5 +3,13 @@
   "catalogId": "partybeam-official",
   "channel": "stable",
   "sourceCatalogPath": "catalog/v1/catalog.json",
-  "games": []
+  "games": [
+    {
+      "gameId": "partybeam.placeholder",
+      "latestVersion": "0.1.0",
+      "versions": [
+        "0.1.0"
+      ]
+    }
+  ]
 }

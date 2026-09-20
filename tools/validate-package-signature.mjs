@@ -41,7 +41,8 @@ function publicKeyToPem(publicKey) {
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-signature-test-"));
 
 try {
-  const { secretKey, publicKey } = p256.keygen();
+  const { secretKey } = p256.keygen();
+  const publicKey = p256.getPublicKey(secretKey, false);
   const publisherId = "partybeam";
   const keyId = "test-ephemeral-p256";
   const packageHash = crypto.randomBytes(32);

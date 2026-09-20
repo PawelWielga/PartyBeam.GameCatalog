@@ -116,7 +116,7 @@ The catalog stores those values unchanged for one exact release. Separately, `pa
 
 This distinction is intentional: PartyBeam signs logical package contents independently of ZIP/container layout, while the catalog must also verify the exact bytes fetched from GitHub.
 
-Publication additionally binds each trusted `keyId` to an explicit `publisherId` through `trust/v1/publisher-keys.json`. The committed production trust store is intentionally empty until the first real PartyBeam production public signing key exists, so real publication currently fails closed.
+Publication additionally binds each trusted `keyId` to an explicit `publisherId` through `trust/v1/publisher-keys.json`. The store currently contains the public key used for the first-party `partybeam.placeholder` integration package. Its private key is not committed and the key is not intended for further game releases.
 
 See `docs/package-contract-alignment.md` and `docs/publisher-trust-store.md`.
 
@@ -213,6 +213,12 @@ Publication-side signature verification uses `@noble/curves` P-256 with `prehash
 `stable.json` and `test.json` carry only game/version identities and `latestVersion`. PartyBeam resolves an exact version back into `catalog.json` for full release metadata, which prevents channel files from contradicting hashes or compatibility information.
 
 See `docs/channel-indexes.md`.
+
+## Placeholder integration game
+
+The stable catalog contains `partybeam.placeholder` `0.1.0`, a deliberately small first-party package used to exercise normal PartyBeam discovery and package loading before a production game is ready. The public Release asset contains TV, Android-controller and browser-controller web components and reports `runtime.ready` through the standard sandbox bridge.
+
+The package is signed and was fully verified with PartyBeam's canonical `PartyBeam.PackageVerifier`. It is integration content, not a replacement for the real Reflex end-to-end publication evidence described in `docs/reflex-end-to-end-smoke.md`.
 
 ## Publication preparation
 
