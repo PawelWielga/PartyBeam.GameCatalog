@@ -21,7 +21,7 @@
             "integrity": { "algorithm": "SHA-256", "digest": "3333333333333333333333333333333333333333333333333333333333333333" },
             "manifestSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
             "packageSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-            "signature": { "algorithm": "ecdsa-p256-sha256-p1363", "keyId": "fixture-key", "valueBase64": "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg==" }
+            "signature": { "algorithm": "ecdsa-p256-sha256-p1363", "keyId": "fixture-key", "valueBase64": "AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg==" }
           },
           "compatibility": {
             "gameContractApi": { "minInclusive": "1.0.0", "maxExclusive": "2.0.0" },

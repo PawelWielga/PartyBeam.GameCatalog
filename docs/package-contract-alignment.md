@@ -50,7 +50,7 @@ For a new publication:
 - its algorithm must be `ecdsa-p256-sha256-p1363`;
 - the P1363 signature must verify over the already-computed 32-byte `packageSha256` without hashing it a second time.
 
-The production trust store is intentionally empty until a real PartyBeam production public signing key is provisioned. This means production publication fails closed today.
+The production trust store currently contains the public key used only for the signed `partybeam.placeholder` integration release. Future game publications require a separately managed long-lived production signing key; the placeholder private key is not committed or reused.
 
 See `docs/publisher-trust-store.md`.
 

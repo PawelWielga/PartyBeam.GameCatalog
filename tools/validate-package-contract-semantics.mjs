@@ -92,8 +92,8 @@ try {
   duplicateKind.components[2].kind = "tv";
   expectCode(
     validateManifest(duplicateKind, "duplicate-kind"),
-    "manifest-required-component-count",
-    "manifest v1 requires exactly one component of each MVP kind",
+    "manifest-schema-contains",
+    "manifest schema requires exactly one component of each MVP kind",
   );
 
   const wanWithoutCapability = clone(baseManifest);

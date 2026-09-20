@@ -15,8 +15,8 @@
           "package": {
             "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.integrity-fixture-v0.1.0/partybeam.integrity-fixture-0.1.0.partybeam",
             "fileName": "partybeam.integrity-fixture-0.1.0.partybeam",
-            "sizeBytes": 31,
-            "integrity": {"algorithm": "SHA-256", "digest": "d5f2b505e3131ed90cc4b5a84dff79d5c21d4791feb783fc007230ddc42aa466"},
+            "sizeBytes": 32,
+            "integrity": {"algorithm": "SHA-256", "digest": "14cd2b8020656b8c6ae1e83c5e9c319b7052eb973325680f437fd2a5294f5b72"},
             "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "packageSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "signature": {

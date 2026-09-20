@@ -69,7 +69,8 @@ function signPackageHash(envelope, secretKey, keyId) {
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-publication-test-"));
 
 try {
-  const { secretKey, publicKey } = p256.keygen();
+  const { secretKey } = p256.keygen();
+  const publicKey = p256.getPublicKey(secretKey, false);
   const keyId = "test-ephemeral-p256";
   const publisherId = "partybeam";
   const sourceEnvelope = JSON.parse(
@@ -117,7 +118,8 @@ try {
     trustStorePath,
   });
 
-  const release = prepared.candidate.games[0]?.releases[0];
+  const preparedGame = prepared.candidate.games.find((game) => game.gameId === "partybeam.reflex");
+  const release = preparedGame?.releases.find((candidate) => candidate.version === "1.2.0-beta.1");
   if (
     release?.version === "1.2.0-beta.1"
     && release.channel === "test"
@@ -138,7 +140,7 @@ try {
   const testChannel = JSON.parse(fs.readFileSync(testPath, "utf8"));
 
   if (
-    persistedCandidate.games[0]?.gameId === "partybeam.reflex"
+    persistedCandidate.games.some((game) => game.gameId === "partybeam.reflex")
     && persistedProvenance.releaseTag === "game-partybeam.reflex-v1.2.0-beta.1"
     && persistedProvenance.cryptographicSignatureVerified === true
     && persistedProvenance.componentPayloadsVerified === false
@@ -155,7 +157,9 @@ try {
   }
 
   if (
-    prepared.channelDocuments.stable.games.length === 0
+    prepared.channelDocuments.stable.games.some(
+      (game) => game.gameId === "partybeam.placeholder" && game.latestVersion === "0.1.0",
+    )
     && prepared.channelDocuments.test.games[0]?.latestVersion === "1.2.0-beta.1"
     && testChannel.games[0]?.gameId === "partybeam.reflex"
   ) {
@@ -164,7 +168,7 @@ try {
     fail("publication preparation generated incorrect stable/test channel candidates");
   }
 
-  let emptyProductionTrustRejected = false;
+  let unrelatedProductionKeyRejected = false;
   try {
     preparePublication({
       catalogPath: CATALOG_PATH,
@@ -176,11 +180,11 @@ try {
       provenancePath: path.join(tempDir, "untrusted.provenance.json"),
     });
   } catch (error) {
-    emptyProductionTrustRejected = error.message.includes("signature-untrusted-key");
+    unrelatedProductionKeyRejected = error.message.includes("signature-untrusted-key");
   }
 
-  if (emptyProductionTrustRejected) {
-    pass("empty production trust store fails closed until an official publisher key is configured");
+  if (unrelatedProductionKeyRejected) {
+    pass("production trust store rejects a package signed by an unrelated key");
   } else {
     fail("publication must not pass without an explicitly trusted publisher key");
   }

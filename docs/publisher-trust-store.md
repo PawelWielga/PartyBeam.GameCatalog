@@ -47,26 +47,17 @@ The signature is IEEE P1363 `r || s` over the already computed 32-byte logical `
 
 `tools/verify-package-signature.mjs` implements this publication-side check with `@noble/curves` P-256 verification using `prehash: false`. `lowS: false` is intentional because PartyBeam's .NET `ECDsa.SignHash` contract does not require low-S normalization.
 
-## Production bootstrap
+## Current bootstrap key
 
-The committed production trust store is intentionally empty until an actual PartyBeam production public signing key exists:
+The committed store contains the public key for `partybeam.placeholder` `0.1.0`. That package is a first-party integration probe, and its private key is not committed to this repository. The key remains active so PartyBeam installations that bundle the matching public store can acquire and verify the placeholder package; it must not be reused for subsequent game releases.
 
-```json
-{
-  "schemaVersion": 1,
-  "keys": []
-}
-```
-
-This makes publication fail closed rather than trusting a fixture/test key.
-
-When the first production key is created:
+When a long-lived production key is created:
 
 1. keep the private key only in the trusted signing environment;
 2. export its P-256 SubjectPublicKeyInfo PEM public key;
 3. choose a stable `keyId` that can survive key rotation/history;
 4. add the public key as `active` and bind it to publisher `partybeam`;
-5. review the trust-store change independently from a game release;
+5. review the trust-store change independently from a game release and retire the placeholder-only key when supported clients no longer need it for new acquisition;
 6. run the local validation suite before using the key for publication.
 
 ## Local verification
