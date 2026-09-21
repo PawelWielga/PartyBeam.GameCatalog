@@ -14,7 +14,7 @@ The repository implements deterministic publication preparation, canonical full-
 
 The committed production trust store currently contains the public key for the one-off `partybeam.placeholder` integration release. Its private key is not committed and it is not the long-lived key for future game publication.
 
-GitHub Release creation/upload remains a deliberate manual trusted-operator step until the self-hosted workflow and its least-privilege publication credential are configured.
+`tools/publish-github-release.mjs` runs the final authorization checks and remote collision preflight by default. It mutates GitHub only with explicit `--execute`, never overwrites an existing Release/tag, uploads exactly one asset, validates the resulting metadata and verifies an anonymous download against the prepared byte count and SHA-256. Until the self-hosted workflow and its least-privilege credential are configured, an authenticated trusted operator runs this command locally.
 
 ## Trust and credential boundary
 
@@ -189,18 +189,30 @@ The provenance file is audit evidence, not a cryptographic authorization token b
 
 ## Trusted GitHub mutation phase
 
-After full PartyBeam package verification succeeds, the trusted publication operator can run the mutation phase:
+After full PartyBeam package verification succeeds, first run a non-mutating remote preflight:
 
-1. verify the complete package with the canonical PartyBeam verifier;
-2. produce/update provenance only from that successful verifier result;
-3. run `npm run authorize-publication` and require success;
-4. confirm the target Release tag does not already exist;
-5. create `game-<gameId>-v<version>` in `PartyBeam.GameCatalog`;
-6. upload exactly one immutable `<gameId>-<version>.partybeam` asset;
-7. confirm the public asset can be fetched anonymously and its bytes match the prepared SHA-256/size;
-8. submit the generated catalog and channel candidates as one reviewed repository change;
-9. rerun all local validation against the final public asset and baseline catalog;
-10. only then make the release discoverable through the canonical catalog/channel indexes.
+```bash
+npm run publish-github-release -- \
+  --catalog /tmp/catalog.candidate.json \
+  --baseline catalog/v1/catalog.json \
+  --provenance /tmp/publication.verified.provenance.json \
+  --channels-dir /tmp/catalog-v1-candidate \
+  --package /path/to/<gameId>-<version>.partybeam \
+  --trust-store trust/v1/publisher-keys.json
+```
+
+The preflight reruns `authorize-publication` and confirms through the GitHub API that neither the deterministic Release nor its tag exists. To perform the mutation, rerun the exact command with `--execute`.
+
+The command then:
+
+1. reruns the complete local authorization gate;
+2. rechecks that the Release and tag do not exist;
+3. creates `game-<gameId>-v<version>` from the repository's `main` branch;
+4. uploads exactly one `<gameId>-<version>.partybeam` asset without a clobber path;
+5. validates tag, stable/prerelease state, filename, asset count and size through the GitHub API;
+6. downloads the public asset without authorization headers and verifies its SHA-256 and size.
+
+After successful upload verification, submit the generated catalog and channel candidates as one reviewed repository change and rerun all local validation. Only merging those files makes the release discoverable through canonical indexes.
 
 If any step fails, publication must stop. A failed or partial attempt must never be papered over by changing bytes behind the same exact version.
 
@@ -210,7 +222,7 @@ A published `(gameId, version)` is immutable.
 
 Corrections require a new SemVer release. Publication tooling must not use GitHub Release asset replacement as a way to change trusted package bytes while preserving an existing version identity.
 
-The preparation command enforces this on catalog metadata already. The trusted GitHub mutation step must enforce the same rule against existing Release tags/assets before upload.
+The preparation command enforces this on catalog metadata. `publish-github-release` independently refuses both an existing Release and an existing Git tag and provides no clobber/overwrite option. Repository administrators should enable GitHub immutable releases when available; regardless of that setting, later byte replacement is detected by catalog integrity validation.
 
 ## Publisher key lifecycle
 
