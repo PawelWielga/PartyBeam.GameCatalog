@@ -1,6 +1,6 @@
 {
   "repository": "PawelWielga/PartyBeam.Platform",
-  "pullRequest": 19,
-  "ref": "main",
-  "commit": "7747374d55ed20e4cc5e4afc9903c8efce42102d"
+  "pullRequest": 56,
+  "ref": "first-mvp/optional-package-signing",
+  "commit": "57107106274e7138de9200014901dad959355053"
 }
