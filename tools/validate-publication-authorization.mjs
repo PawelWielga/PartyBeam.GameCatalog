@@ -71,6 +71,7 @@ try {
     schemaVersion: 1,
     gameId: catalog.games[0].gameId,
     version: release.version,
+    publisherId: catalog.games[0].publisher.id,
     channel: release.channel,
     releaseTag: `game-${catalog.games[0].gameId}-v${release.version}`,
     assetUrl: release.package.assetUrl,
