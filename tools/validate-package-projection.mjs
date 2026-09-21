@@ -19,7 +19,8 @@ const SIGNATURE_SCHEMA_PATH = path.join(
 );
 const SIGNATURE_ALGORITHM = "ecdsa-p256-sha256-p1363";
 const INTERNET_ACCESS_CAPABILITY = "internetAccess";
-const REQUIRED_COMPONENT_KINDS = ["tv", "androidController", "browserController"];
+const REQUIRED_COMPONENT_KINDS = ["tv", "androidController"];
+const OPTIONAL_SINGLE_COMPONENT_KINDS = ["browserController"];
 const SURFACE_BY_COMPONENT_KIND = new Map([
   ["tv", "tv"],
   ["androidController", "android"],
@@ -263,6 +264,19 @@ function validateManifestSemantics(manifest, errors) {
           "manifest-required-component-count",
           "/components",
           `manifest v1 requires exactly one '${kind}' component; found ${count}`,
+        ),
+      );
+    }
+  }
+
+  for (const kind of OPTIONAL_SINGLE_COMPONENT_KINDS) {
+    const count = manifest.components.filter((component) => component.kind === kind).length;
+    if (count > 1) {
+      errors.push(
+        issue(
+          "manifest-optional-component-count",
+          "/components",
+          `manifest v1 allows at most one '${kind}' component; found ${count}`,
         ),
       );
     }
