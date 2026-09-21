@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { p256 } from "@noble/curves/nist.js";
-import { verifyPackageSignature } from "./verify-package-signature.mjs";
+import { DEFAULT_TRUST_STORE_PATH, verifyPackageSignature } from "./verify-package-signature.mjs";
 
 let failed = false;
 
@@ -162,6 +162,25 @@ try {
   }
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
+}
+
+const officialTrustStore = JSON.parse(fs.readFileSync(DEFAULT_TRUST_STORE_PATH, "utf8"));
+const placeholderKey = officialTrustStore.keys.find((key) => key.keyId === "partybeam-placeholder-2026-09");
+const retainedKey = officialTrustStore.keys.find((key) => key.keyId === "partybeam-first-party-2026-09");
+if (placeholderKey?.comment?.includes("must not be used for Grimcellar, Reflex or later releases")) {
+  pass("placeholder key remains explicitly limited to integration use");
+} else {
+  fail("placeholder key must remain explicitly limited to integration use");
+}
+if (
+  retainedKey?.publisherId === "partybeam"
+  && retainedKey?.algorithm === "ecdsa-p256-sha256-p1363"
+  && retainedKey?.status === "active"
+  && retainedKey?.publicKeyPem?.includes("BEGIN PUBLIC KEY")
+) {
+  pass("official trust store contains the active retained first-party PartyBeam key");
+} else {
+  fail("official trust store must contain the active retained first-party PartyBeam key");
 }
 
 if (failed) {
