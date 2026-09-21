@@ -133,3 +133,9 @@ Normal offline/LAN operation depends on this distinction.
 - correction represented by a new SemVer version while preserving the old release.
 
 The same rules are enforced by `validate-catalog.mjs --baseline ...` and are therefore reusable by the future self-hosted CI/publication workflow.
+
+`npm run audit-public-assets` additionally downloads every canonical release asset without credentials and compares its actual byte count and SHA-256 with the immutable catalog record. The audit intentionally includes `delisted` releases because delisting removes discovery, not historical integrity/auditability. Filters are available for one exact release:
+
+```bash
+npm run audit-public-assets -- --game-id partybeam.example --version 1.2.3
+```

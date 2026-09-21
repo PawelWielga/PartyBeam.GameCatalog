@@ -163,6 +163,17 @@ npm run verify-package -- \
   --package path/to/partybeam.example-1.2.3.partybeam
 ```
 
+Audit every canonical public Release asset through an anonymous download, including delisted historical releases:
+
+```bash
+npm run audit-public-assets
+
+# or one exact release
+npm run audit-public-assets -- --game-id partybeam.example --version 1.2.3
+```
+
+The audit fails if an asset is unavailable or its downloaded byte count/SHA-256 differs from the immutable catalog record.
+
 Verify the detached ECDSA P-256 signature against an explicitly trusted publisher key:
 
 ```bash
