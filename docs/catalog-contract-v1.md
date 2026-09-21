@@ -37,9 +37,9 @@ Changing title, artwork, supported languages or publisher display text does not 
 
 - `defaultLocale` selects the preferred catalog fallback;
 - `locales` contains localized title/summary plus optional official presentation references;
-- `supportUrl` mirrors the signed manifest support destination when one is declared.
+- `supportUrl` mirrors the verified manifest support destination when one is declared.
 
-For signed package v1, English (`en`) is required as the terminal catalog fallback. Publication validation checks that catalog locales agree with the signed manifest and that catalog summaries/titles do not contradict signed author metadata.
+For package v1, English (`en`) is required as the terminal catalog fallback. Publication validation checks that catalog locales agree with the verified manifest and that catalog summaries/titles do not contradict package author metadata.
 
 Age rating, monetization and advertising metadata remain outside the MVP contract.
 
