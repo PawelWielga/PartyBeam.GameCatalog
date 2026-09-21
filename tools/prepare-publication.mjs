@@ -222,8 +222,8 @@ function validateEnvelopeAgainstManifest(manifestBytes, manifest, envelope) {
     );
   }
 
-  if (envelope.signature?.algorithm !== SIGNATURE_ALGORITHM) {
-    throw new Error(`signature envelope must use '${SIGNATURE_ALGORITHM}'.`);
+  if (envelope.signature && envelope.signature.algorithm !== SIGNATURE_ALGORITHM) {
+    throw new Error(`signature envelope must use '${SIGNATURE_ALGORITHM}' when signature metadata is present.`);
   }
 
   return { manifestSha256, packageSha256 };
@@ -259,27 +259,31 @@ function mergeRelease(baseCatalog, manifestBytes, manifest, envelope, packagePat
   );
   const { tag, url: assetUrl } = buildAssetUrl(manifest.gameId, manifest.version, fileName);
 
+  const packageMetadata = {
+    assetUrl,
+    fileName,
+    sizeBytes: packageBytes.length,
+    integrity: {
+      algorithm: "SHA-256",
+      digest: sha256Bytes(packageBytes),
+    },
+    manifestSha256,
+    packageSha256,
+  };
+  if (envelope.signature) {
+    packageMetadata.signature = {
+      algorithm: envelope.signature.algorithm,
+      keyId: envelope.signature.keyId,
+      valueBase64: envelope.signature.valueBase64,
+    };
+  }
+
   const release = {
     version: manifest.version,
     channel: hasPrerelease(manifest.version) ? "test" : "stable",
     publicationState: "published",
     publishedAt,
-    package: {
-      assetUrl,
-      fileName,
-      sizeBytes: packageBytes.length,
-      integrity: {
-        algorithm: "SHA-256",
-        digest: sha256Bytes(packageBytes),
-      },
-      manifestSha256,
-      packageSha256,
-      signature: {
-        algorithm: envelope.signature.algorithm,
-        keyId: envelope.signature.keyId,
-        valueBase64: envelope.signature.valueBase64,
-      },
-    },
+    package: packageMetadata,
     compatibility: buildCompatibility(manifest),
   };
 
@@ -378,15 +382,17 @@ export function preparePublication({
   const packageContractSource = readJson(UPSTREAM_SOURCE_PATH);
   const trustStoreBytes = fs.readFileSync(trustStorePath);
 
-  const signatureErrors = verifyPackageSignature({
-    signaturePath,
-    publisherId: manifest.publisher?.id,
-    trustStorePath,
-  });
-  if (signatureErrors.length > 0) {
-    throw new Error(
-      `Publication signature failed trusted-key verification:\n${formatValidationErrors(signatureErrors)}`,
-    );
+  if (envelope.signature) {
+    const signatureErrors = verifyPackageSignature({
+      signaturePath,
+      publisherId: manifest.publisher?.id,
+      trustStorePath,
+    });
+    if (signatureErrors.length > 0) {
+      throw new Error(
+        `Publication signature failed trusted-key verification:\n${formatValidationErrors(signatureErrors)}`,
+      );
+    }
   }
 
   const prepared = mergeRelease(
@@ -455,16 +461,21 @@ export function preparePublication({
       },
       manifestSha256: prepared.manifestSha256,
       packageSha256: prepared.packageSha256,
-      signature: {
-        algorithm: prepared.release.package.signature.algorithm,
-        keyId: prepared.release.package.signature.keyId,
-      },
+      ...(prepared.release.package.signature
+        ? {
+            signature: {
+              algorithm: prepared.release.package.signature.algorithm,
+              keyId: prepared.release.package.signature.keyId,
+            },
+          }
+        : {}),
       partyBeamPackageContract: packageContractSource,
-      cryptographicSignatureVerified: true,
+      cryptographicSignatureVerified: Boolean(prepared.release.package.signature),
       componentPayloadsVerified: false,
       fullPackageVerification: false,
-      cryptographicVerificationNote:
-        "ECDSA P-256 P1363 signature over packageSha256 was verified against an active publisher key. Component payload bytes inside the .partybeam container are not yet independently re-verified here; full PartyBeam GamePackageVerifier verification remains required before final GitHub Release publication.",
+      cryptographicVerificationNote: prepared.release.package.signature
+        ? "ECDSA P-256 P1363 signature over packageSha256 was verified against an active publisher key. Component payload bytes inside the .partybeam container are not yet independently re-verified here; full PartyBeam GamePackageVerifier verification remains required before final GitHub Release publication."
+        : "First MVP unsigned-official profile: manifest SHA-256, declared component hashes, logical packageSha256 and outer Release-asset SHA-256 are bound and validated; no publisher cryptographic signature is present. Canonical full-package verification remains required before final GitHub Release publication.",
     };
 
     validateProvenance(provenance);
@@ -495,7 +506,7 @@ function parseArgs(argv) {
     const value = argv[index];
     if (value === "--catalog") options.catalogPath = path.resolve(argv[++index]);
     else if (value === "--manifest") options.manifestPath = path.resolve(argv[++index]);
-    else if (value === "--signature") options.signaturePath = path.resolve(argv[++index]);
+    else if (value === "--signature" || value === "--envelope") options.signaturePath = path.resolve(argv[++index]);
     else if (value === "--package") options.packagePath = path.resolve(argv[++index]);
     else if (value === "--published-at") options.publishedAt = argv[++index];
     else if (value === "--output") options.outputPath = path.resolve(argv[++index]);
@@ -526,7 +537,11 @@ async function main() {
   console.log(
     `Publication candidate prepared: ${provenance.gameId}@${provenance.version} (${provenance.channel}), ${provenance.releaseTag}`,
   );
-  console.log("Trusted publisher signature verified. No GitHub Release was created; full component payload verification is still required.");
+  console.log(
+    provenance.cryptographicSignatureVerified
+      ? "Trusted publisher signature verified. No GitHub Release was created; full component payload verification is still required."
+      : "Unsigned First MVP integrity profile prepared. No GitHub Release was created; full component payload verification is still required.",
+  );
 }
 
 const invokedAsScript = process.argv[1]
