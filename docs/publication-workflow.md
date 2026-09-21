@@ -6,15 +6,29 @@ This document describes the intended publication path for official PartyBeam gam
 
 The repository implements deterministic publication preparation, canonical full-package verification through PartyBeam's trusted-tooling CLI, and a fail-closed final authorization precheck.
 
-`tools/prepare-publication.mjs` creates reviewable publication outputs but never uploads anything. Before it writes a candidate, it requires the detached ECDSA P-256 signature to verify against an `active` publisher key from `trust/v1/publisher-keys.json`.
+`tools/prepare-publication.mjs` creates reviewable publication outputs but never uploads anything. It always verifies the integrity envelope against the manifest/logical package identity. When publisher-signature metadata is present, it additionally verifies the ECDSA P-256 signature against an `active` publisher key from `trust/v1/publisher-keys.json`.
 
-`tools/verify-full-package.mjs` invokes `PartyBeam.PackageVerifier` from a clean `PawelWielga/PartyBeam.Platform` checkout. It records the exact verifier commit and only marks component/full-package verification complete when the canonical verifier returns the expected game, version and publisher identity for the exact prepared asset and trusted key.
+`tools/verify-full-package.mjs` invokes `PartyBeam.PackageVerifier` from a clean `PawelWielga/PartyBeam.Platform` checkout. It records the exact verifier commit and only marks component/full-package verification complete when the canonical verifier returns the expected game, version and publisher identity for the exact prepared asset. Signed packages are checked with their trusted key; unsigned First MVP packages use the explicit `--allow-unsigned` verifier policy.
 
-`tools/authorize-publication.mjs` is a separate final gate intended to run immediately before GitHub Release mutation. It independently rechecks the candidate catalog, immutable baseline, package bytes, publisher signature/trust state, canonical-verifier evidence and channel projections. It has no force/bypass option.
+`tools/authorize-publication.mjs` is a separate final gate intended to run immediately before GitHub Release mutation. It independently rechecks the candidate catalog, immutable baseline, package bytes, exact publisher identity, optional publisher signature/trust state, canonical-verifier evidence and channel projections. It has no force/bypass option.
 
 The committed production trust store currently contains the public key for the one-off `partybeam.placeholder` integration release. Its private key is not committed and it is not the long-lived key for future game publication.
 
 `tools/publish-github-release.mjs` runs the final authorization checks and remote collision preflight by default. It mutates GitHub only with explicit `--execute`, never overwrites an existing Release/tag, uploads exactly one asset, validates the resulting metadata and verifies an anonymous download against the prepared byte count and SHA-256. Until the self-hosted workflow and its least-privilege credential are configured, an authenticated trusted operator runs this command locally.
+
+## First MVP unsigned-official policy
+
+Mandatory publisher signing is deferred to Post-MVP/Production Ready. First MVP may publish an unsigned first-party package only when all of the following remain true:
+
+- the package is distributed through the official PartyBeam.GameCatalog and immutable GitHub Release path;
+- `signature.json` is present as the integrity envelope;
+- exact `manifestSha256`, declared component SHA-256 values and logical `packageSha256` agree;
+- the downloadable Release asset size and SHA-256 are pinned;
+- publisher/game/version/catalog projection agree;
+- PartyBeam's canonical full-package verifier succeeds in explicit unsigned mode;
+- the final authorization gate and anonymous public-asset audit succeed.
+
+Signed packages continue to use the trusted-key path whenever a signature is present. Arbitrary sideloading, loose files and hash bypasses remain invalid.
 
 ## Trust and credential boundary
 
@@ -44,9 +58,11 @@ The private game repository produces:
 
 Every component in the package belongs to the same exact SemVer release.
 
-### 2. Publication-side trusted signature verification
+### 2. Publication-side integrity and optional signature verification
 
-GameCatalog verifies the detached envelope before creating a catalog candidate:
+GameCatalog always verifies that the envelope's `manifestSha256` and `packageSha256` match the exact manifest and deterministic logical package descriptor.
+
+When `signature` is present it additionally verifies:
 
 - `keyId` exists in the public trust store;
 - the trusted key is bound to the manifest `publisher.id`;
@@ -55,9 +71,9 @@ GameCatalog verifies the detached envelope before creating a catalog candidate:
 - P1363 signature decodes to exactly 64 bytes;
 - signature verifies over the already-computed 32-byte `packageSha256` without hashing it again.
 
-This step proves that an authorized publisher key signed the logical package hash declared by the envelope.
+For an unsigned First MVP release, provenance explicitly records `cryptographicSignatureVerified: false`; it must never imply publisher authentication.
 
-It does **not** yet prove that every component byte physically contained in the `.partybeam` asset matches the component hashes declared by the manifest.
+This phase still does **not** prove that every component byte physically contained in the `.partybeam` asset matches the component hashes declared by the manifest.
 
 ### 3. Canonical PartyBeam full-package verification
 
@@ -67,10 +83,9 @@ Before public upload, PartyBeam's canonical `GamePackageVerifier` must additiona
 - component presence and hashes;
 - exact component release identity;
 - deterministic logical package hash;
-- trusted `keyId`;
-- ECDSA P-256/SHA-256/P1363 signature.
+- trusted `keyId` and ECDSA P-256/SHA-256/P1363 signature when signature metadata is present.
 
-The publication-side signature gate and the canonical verifier should agree on trust/key material. The canonical verifier remains authoritative for the complete package because it receives actual component payload bytes.
+The publication-side integrity/signature gate and canonical verifier must agree on package identity. For signed packages they must also agree on trust/key material. The canonical verifier remains authoritative for the complete package because it receives actual component payload bytes.
 
 After phase 4 creates prepared provenance, run the canonical verifier from a clean PartyBeam.Platform checkout:
 
@@ -84,7 +99,7 @@ npm run verify-full-package -- \
   --output /tmp/publication.verified.provenance.json
 ```
 
-The verifier checkout must have the canonical GitHub origin, the exact canonical project path and a clean worktree. Successful output records the source commit, Game Contract version, verification timestamp, asset hash and key ID. Hand-editing the flags does not satisfy the provenance schema or the independent authorization checks below.
+The verifier checkout must have the canonical GitHub origin, the exact canonical project path and a clean worktree. Successful output records the source commit, Game Contract version, verification timestamp and asset hash; signed releases additionally record key ID. Hand-editing the flags does not satisfy the provenance schema or the independent authorization checks below.
 
 ### 4. Prepare catalog and channel candidates
 
@@ -111,10 +126,10 @@ The command:
 - refuses an unexpected package filename;
 - recomputes the exact manifest hash;
 - recomputes PartyBeam's logical package hash and compares it with the envelope;
-- verifies the detached ECDSA signature against an active trusted publisher key;
+- verifies the detached ECDSA signature against an active trusted publisher key when one is present;
 - calculates the physical release-asset SHA-256 and size;
 - derives stable/test channel from SemVer;
-- derives catalog metadata and compatibility projection from the signed manifest;
+- derives catalog metadata and compatibility projection from the manifest;
 - constructs the deterministic GitHub Release tag and public asset URL;
 - validates the candidate against the catalog schema and semantic rules;
 - validates catalog ↔ manifest/signature projection;
@@ -147,12 +162,12 @@ This command independently verifies:
 - exact SHA-256 of baseline catalog, candidate catalog and trust store;
 - immutable candidate-vs-baseline rules;
 - exact package filename, byte size and transport SHA-256;
-- publisher/key binding and ECDSA signature from the candidate release itself;
+- exact publisher identity and, when present, publisher/key binding plus ECDSA signature from the candidate release;
 - deterministic Release tag and public asset URL;
 - exact release identity recorded in provenance;
 - SHA-256 and exact deterministic contents of discovery/stable/test channel documents.
 
-A prepared candidate fails this gate until canonical verification evidence is present. Manually flipping the flags is insufficient because the schema requires verifier evidence and signature/trust, package bytes, candidate hashes and channel projections are independently recomputed.
+A prepared candidate fails this gate until canonical verification evidence is present. Manually flipping the flags is insufficient because the schema requires verifier evidence while package bytes, publisher identity, optional signature/trust data, candidate hashes and channel projections are independently recomputed.
 
 The command has no `--force` or ignore-verification mode.
 
@@ -168,22 +183,14 @@ The generated provenance includes:
 - physical release asset filename, size and SHA-256;
 - exact manifest hash;
 - logical PartyBeam package hash;
-- signature algorithm and key ID;
+- publisher ID and optional signature algorithm/key ID;
 - pinned PartyBeam package-contract source commit;
 - the requested publication timestamp;
 - explicit verification-state flags.
 
-A freshly prepared candidate records:
+A freshly prepared signed candidate records `cryptographicSignatureVerified: true`; an unsigned First MVP candidate records `false`. Both initially record `componentPayloadsVerified: false` and `fullPackageVerification: false`.
 
-```json
-{
-  "cryptographicSignatureVerified": true,
-  "componentPayloadsVerified": false,
-  "fullPackageVerification": false
-}
-```
-
-This is intentionally precise. The publisher signature has been cryptographically verified, but the actual component payloads inside the `.partybeam` container have not yet been independently re-read and checked by the canonical PartyBeam verifier. Therefore prepared provenance is still **not authorization to publish**. `verify-full-package` produces a separate finalized provenance file after canonical verification succeeds.
+This is intentionally precise: hash/envelope preparation is not authorization to publish, and an unsigned release must never be described as cryptographically publisher-authenticated. The actual component payloads inside the `.partybeam` container still need to be independently read and checked by the canonical PartyBeam verifier. Therefore prepared provenance is still **not authorization to publish**. `verify-full-package` produces a separate finalized provenance file after canonical verification succeeds.
 
 The provenance file is audit evidence, not a cryptographic authorization token by itself. Trusted publication tooling must run the final authorization precheck against the actual candidate files and package bytes immediately before mutation.
 
@@ -226,7 +233,7 @@ The preparation command enforces this on catalog metadata. `publish-github-relea
 
 ## Publisher key lifecycle
 
-New publication requires an `active` key. A `retired` key can be used only when historical verification is explicitly requested. A `revoked` key is not accepted by normal verification.
+During First MVP a package may omit publisher signature metadata. If a package is signed, new publication requires an `active` key. A `retired` key can be used only when historical verification is explicitly requested and a `revoked` key is not accepted. Mandatory signing and retained first-party key operations are Post-MVP under #11.
 
 Key retirement/revocation is separate from release delisting. See `docs/publisher-trust-store.md`.
 
