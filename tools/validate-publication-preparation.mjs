@@ -168,6 +168,41 @@ try {
     fail("publication preparation generated incorrect stable/test channel candidates");
   }
 
+  const unsignedEnvelope = structuredClone(sourceEnvelope);
+  delete unsignedEnvelope.signature;
+  const unsignedEnvelopePath = path.join(tempDir, "unsigned-integrity-envelope.json");
+  fs.writeFileSync(unsignedEnvelopePath, `${JSON.stringify(unsignedEnvelope, null, 2)}\n`, "utf8");
+
+  const unsignedOutputPath = path.join(tempDir, "unsigned-catalog.candidate.json");
+  const unsignedProvenancePath = path.join(tempDir, "unsigned-publication.provenance.json");
+  const unsignedChannelsDir = path.join(tempDir, "unsigned-channel-candidate");
+  const unsignedPrepared = preparePublication({
+    catalogPath: CATALOG_PATH,
+    manifestPath: path.join(PACKAGE_CONTRACT_DIR, "manifest.json"),
+    signaturePath: unsignedEnvelopePath,
+    packagePath: PACKAGE_PATH,
+    publishedAt: PUBLISHED_AT,
+    outputPath: unsignedOutputPath,
+    provenancePath: unsignedProvenancePath,
+    channelsOutputDir: unsignedChannelsDir,
+    trustStorePath,
+  });
+  const unsignedRelease = unsignedPrepared.candidate.games
+    .find((game) => game.gameId === "partybeam.reflex")
+    ?.releases.find((candidate) => candidate.version === "1.2.0-beta.1");
+  if (
+    unsignedRelease
+    && unsignedRelease.package.signature === undefined
+    && unsignedPrepared.provenance.signature === undefined
+    && unsignedPrepared.provenance.publisherId === "partybeam"
+    && unsignedPrepared.provenance.cryptographicSignatureVerified === false
+    && unsignedPrepared.provenance.componentPayloadsVerified === false
+  ) {
+    pass("unsigned First MVP preparation preserves integrity metadata without claiming publisher authentication");
+  } else {
+    fail("unsigned First MVP publication preparation produced incorrect metadata");
+  }
+
   let unrelatedProductionKeyRejected = false;
   try {
     preparePublication({
