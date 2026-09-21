@@ -28,7 +28,7 @@ This repository does **not** own:
 - signing private keys;
 - the authoritative package-internal manifest contract.
 
-The package manifest remains authoritative for package-internal declarations. Catalog compatibility fields are a discovery/filtering projection and publication validation must reject disagreement with the signed manifest.
+The package manifest remains authoritative for package-internal declarations. Catalog compatibility fields are a discovery/filtering projection and publication validation must reject disagreement with the verified manifest.
 
 ## Public contract layout
 
