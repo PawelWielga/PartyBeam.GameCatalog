@@ -2,7 +2,7 @@
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #56, pinned to merge commit `7747374d55ed20e4cc5e4afc9903c8efce42102d` in `schemas/upstream/partybeam/v1/source.json`.
+The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #56, pinned to canonical `main` commit `b0508d3815e67512ab71de746949cb9a37e444a6` in `schemas/upstream/partybeam/v1/source.json`.
 
 ## Authority
 
