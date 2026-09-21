@@ -438,39 +438,50 @@ export function validatePackageProjection({
     logicalHash,
   );
 
-  const signature = envelope.signature;
-  if (signature.algorithm !== SIGNATURE_ALGORITHM) {
+  const signature = envelope.signature ?? null;
+  const catalogSignature = release.package.signature ?? null;
+  if ((signature === null) !== (catalogSignature === null)) {
     errors.push(
       issue(
-        "projection-signature-algorithm",
-        "/signature/algorithm",
-        `signature algorithm must be '${SIGNATURE_ALGORITHM}'`,
+        "projection-signature-presence-catalog",
+        "/package/signature",
+        "catalog signature presence must match the package integrity envelope",
       ),
     );
-  }
-  validateSignatureEncoding(signature, errors);
+  } else if (signature && catalogSignature) {
+    if (signature.algorithm !== SIGNATURE_ALGORITHM) {
+      errors.push(
+        issue(
+          "projection-signature-algorithm",
+          "/signature/algorithm",
+          `signature algorithm must be '${SIGNATURE_ALGORITHM}'`,
+        ),
+      );
+    }
+    validateSignatureEncoding(signature, errors);
 
-  compareValue(
-    errors,
-    "projection-signature-algorithm-catalog",
-    "/package/signature/algorithm",
-    release.package.signature.algorithm,
-    signature.algorithm,
-  );
-  compareValue(
-    errors,
-    "projection-signature-key-catalog",
-    "/package/signature/keyId",
-    release.package.signature.keyId,
-    signature.keyId,
-  );
-  compareValue(
-    errors,
-    "projection-signature-value-catalog",
-    "/package/signature/valueBase64",
-    release.package.signature.valueBase64,
-    signature.valueBase64,
-  );
+    compareValue(
+      errors,
+      "projection-signature-algorithm-catalog",
+      "/package/signature/algorithm",
+      catalogSignature.algorithm,
+      signature.algorithm,
+    );
+    compareValue(
+      errors,
+      "projection-signature-key-catalog",
+      "/package/signature/keyId",
+      catalogSignature.keyId,
+      signature.keyId,
+    );
+    compareValue(
+      errors,
+      "projection-signature-value-catalog",
+      "/package/signature/valueBase64",
+      catalogSignature.valueBase64,
+      signature.valueBase64,
+    );
+  }
 
   compareValue(
     errors,
@@ -637,7 +648,7 @@ function parseArgs(argv) {
     else if (value === "--game") options.gameId = argv[++index];
     else if (value === "--version") options.version = argv[++index];
     else if (value === "--manifest") options.manifestPath = path.resolve(argv[++index]);
-    else if (value === "--signature") options.signaturePath = path.resolve(argv[++index]);
+    else if (value === "--signature" || value === "--envelope") options.signaturePath = path.resolve(argv[++index]);
     else throw new Error(`Unknown argument: ${value}`);
   }
 
