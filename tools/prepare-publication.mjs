@@ -442,6 +442,7 @@ export function preparePublication({
       schemaVersion: 1,
       gameId: manifest.gameId,
       version: manifest.version,
+      publisherId: manifest.publisher.id,
       channel: prepared.release.channel,
       releaseTag: prepared.tag,
       assetUrl: prepared.release.package.assetUrl,
