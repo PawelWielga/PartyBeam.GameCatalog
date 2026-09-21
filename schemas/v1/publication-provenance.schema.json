@@ -246,6 +246,9 @@
     },
     {
       "if": {
+        "properties": {
+          "signature": {}
+        },
         "required": [
           "signature"
         ]
