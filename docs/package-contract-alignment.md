@@ -2,11 +2,11 @@
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #19, pinned to merge commit `7747374d55ed20e4cc5e4afc9903c8efce42102d` in `schemas/upstream/partybeam/v1/source.json`.
+The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #56, pinned to merge commit `7747374d55ed20e4cc5e4afc9903c8efce42102d` in `schemas/upstream/partybeam/v1/source.json`.
 
 ## Authority
 
-The signed package remains authoritative for runtime facts. The catalog is a public discovery/distribution projection and must never override a different signed manifest value.
+The signed package remains authoritative for runtime facts. The catalog is a public discovery/distribution projection and must never override a different manifest value.
 
 Publication validation therefore checks separate layers:
 
@@ -152,3 +152,9 @@ PartyBeam's `GamePackageVerifier` remains canonical for **full package verificat
 GitHub Actions are intentionally disabled until the planned self-hosted runner is configured. See `docs/ci-policy.md`.
 
 All validation remains callable locally through deterministic repository scripts and is intended to be wired into the self-hosted workflow later without moving validation logic into workflow YAML.
+
+## First MVP optional-signature profile
+
+The pinned Platform contract permits `signature.json` to omit the publisher `signature` member while retaining mandatory `manifestSha256` and `packageSha256`. GameCatalog mirrors that absence in catalog metadata and provenance with `cryptographicSignatureVerified: false`. If signature metadata is present, the existing trusted-key verification remains mandatory.
+
+This profile applies only to official First MVP distribution and does not introduce arbitrary sideloading.
