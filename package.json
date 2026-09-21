@@ -15,8 +15,9 @@
     "verify-package": "node tools/verify-package-integrity.mjs",
     "verify-package-signature": "node tools/verify-package-signature.mjs",
     "prepare-publication": "node tools/prepare-publication.mjs",
+    "verify-full-package": "node tools/verify-full-package.mjs",
     "authorize-publication": "node tools/authorize-publication.mjs",
-    "test": "node tools/validate-semver.mjs && node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-package-contract-semantics.mjs && node tools/validate-package-signature.mjs && node tools/validate-publication-preparation.mjs && node tools/validate-publication-authorization.mjs && node tools/validate-channel-indexes.mjs && node tools/validate-release-lifecycle.mjs"
+    "test": "node tools/validate-semver.mjs && node tools/validate-fixtures.mjs && node tools/validate-catalog-semantics.mjs && node tools/validate-package-contract-semantics.mjs && node tools/validate-package-signature.mjs && node tools/validate-publication-preparation.mjs && node tools/validate-full-package-verification.mjs && node tools/validate-publication-authorization.mjs && node tools/validate-channel-indexes.mjs && node tools/validate-release-lifecycle.mjs"
   },
   "devDependencies": {
     "@noble/curves": "2.4.0",

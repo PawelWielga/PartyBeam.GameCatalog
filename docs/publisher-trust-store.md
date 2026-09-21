@@ -75,4 +75,4 @@ Normal verification accepts `active` keys only. Historical auditing may explicit
 
 This repository verifies the detached signature so catalog preparation can fail closed before any GitHub mutation. PartyBeam's `GamePackageVerifier` remains the canonical full-package verifier because it additionally checks the actual component payload bytes against `components[].sha256`.
 
-Until the `.partybeam` container/extraction contract is wired into this repository, a successful signature check proves that the trusted publisher signed the logical hash declared by the manifest/envelope, but does not by itself prove that every component payload byte inside the downloadable container matches that declaration.
+A successful detached-signature check proves that the trusted publisher signed the logical hash declared by the manifest/envelope, but does not by itself prove that every component payload byte inside the downloadable container matches that declaration. Before publication authorization, `npm run verify-full-package` invokes PartyBeam.Platform's canonical container verifier and binds its result to finalized provenance.

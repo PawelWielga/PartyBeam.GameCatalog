@@ -125,6 +125,30 @@ try {
   provenance.componentPayloadsVerified = true;
   provenance.fullPackageVerification = true;
   fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");
+  const missingEvidenceErrors = authorizePublication({
+    catalogPath,
+    baselinePath: BASELINE_PATH,
+    provenancePath,
+    channelsDir,
+    packagePath: PACKAGE_PATH,
+    trustStorePath: DEFAULT_TRUST_STORE_PATH,
+  });
+  if (errorCodes(missingEvidenceErrors).has("provenance-schema-required")) {
+    pass("manually flipping verification flags cannot bypass canonical verifier evidence");
+  } else {
+    fail("full verification flags must require canonical verifier evidence");
+  }
+
+  provenance.canonicalVerifier = {
+    repository: "PawelWielga/PartyBeam.Platform",
+    commit: "a".repeat(40),
+    project: "eng/PartyBeam.PackageVerifier/PartyBeam.PackageVerifier.csproj",
+    gameContractVersion: "1.0.0",
+    verifiedAt: "2026-09-14T05:00:00Z",
+    releaseAssetSha256: release.package.integrity.digest,
+    keyId: release.package.signature.keyId,
+  };
+  fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");
   const forgedFlagErrors = authorizePublication({
     catalogPath,
     baselinePath: BASELINE_PATH,
@@ -142,6 +166,7 @@ try {
 
   provenance.componentPayloadsVerified = false;
   provenance.fullPackageVerification = false;
+  delete provenance.canonicalVerifier;
   fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");
   fs.appendFileSync(catalogPath, "\n", "utf8");
   const tamperedErrors = authorizePublication({

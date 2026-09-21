@@ -105,7 +105,7 @@ The catalog stores the exact resolved asset URL and transport SHA-256. URL namin
 
 ## Package authenticity model
 
-PartyBeam package manifest v1, currently implemented in `PawelWielga/PartyBeam` draft PR #19, uses a detached signature envelope with:
+PartyBeam package manifest v1, merged in `PawelWielga/PartyBeam.Platform` PR #19, uses a detached signature envelope with:
 
 - exact `manifestSha256`;
 - deterministic logical `packageSha256`;
@@ -239,7 +239,7 @@ npm run prepare-publication -- \
 
 Preparation derives the channel, Release tag/URL, asset hash/size, catalog metadata and compatibility projection from signed package inputs, verifies the signature against an active publisher key, regenerates stable/test projections, then runs all currently available catalog/package consistency gates. Reusing an existing exact game/version is rejected.
 
-The generated provenance records `cryptographicSignatureVerified: true`, but also records `componentPayloadsVerified: false` and `fullPackageVerification: false`. It additionally binds SHA-256 hashes of the candidate catalog and all generated channel documents. Until GameCatalog can invoke PartyBeam's canonical package verifier against extracted component bytes, **the candidate is still not authorization to create the public GitHub Release**.
+The generated provenance records `cryptographicSignatureVerified: true`, but initially records `componentPayloadsVerified: false` and `fullPackageVerification: false`. It additionally binds SHA-256 hashes of the candidate catalog and all generated channel documents. Run `npm run verify-full-package` with a clean `PartyBeam.Platform` checkout to invoke the canonical .NET verifier and produce finalized provenance bound to the exact verifier commit, package bytes and trusted key. A prepared candidate alone is still not authorization to create the public GitHub Release.
 
 See `docs/publication-workflow.md`.
 

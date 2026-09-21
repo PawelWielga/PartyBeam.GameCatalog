@@ -4,9 +4,9 @@ This document defines the semantics of `schemas/v1/catalog.schema.json` and the 
 
 ## Status
 
-Catalog v1 is aligned with the signed game-package v1 contract currently implemented in `PawelWielga/PartyBeam` draft PR #19 (`feature/02-game-package-manifest`). The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
+Catalog v1 is aligned with the signed game-package v1 contract merged in `PawelWielga/PartyBeam.Platform` PR #19. The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
 
-PartyBeam remains authoritative for the package format and cryptographic verification. Until PR #19 is merged, GameCatalog treats the mapping as implemented but not finally frozen. Any upstream contract change must refresh the pinned schemas and projection fixtures before publication tooling is considered synchronized.
+PartyBeam.Platform remains authoritative for the package format and cryptographic verification. Any upstream contract change must refresh the pinned schemas and projection fixtures before publication tooling is considered synchronized.
 
 The catalog must never weaken or override a signed package manifest.
 

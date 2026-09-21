@@ -1,6 +1,6 @@
 {
-  "repository": "PawelWielga/PartyBeam",
+  "repository": "PawelWielga/PartyBeam.Platform",
   "pullRequest": 19,
-  "ref": "feature/02-game-package-manifest",
-  "commit": "c95feca25565da7ca1ae5ed7ad0d714f6e62df6e"
+  "ref": "main",
+  "commit": "7747374d55ed20e4cc5e4afc9903c8efce42102d"
 }

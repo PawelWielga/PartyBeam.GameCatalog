@@ -122,6 +122,18 @@ export function authorizePublication({
       ),
     );
   }
+  if (provenance.componentPayloadsVerified === true && provenance.fullPackageVerification === true) {
+    if (!provenance.canonicalVerifier) {
+      errors.push(issue("canonical-verifier-evidence-required", "canonical verifier evidence is required for full verification"));
+    } else {
+      if (provenance.canonicalVerifier.releaseAssetSha256 !== provenance.releaseAsset.sha256) {
+        errors.push(issue("canonical-verifier-asset-mismatch", "canonical verifier evidence does not match the release asset SHA-256"));
+      }
+      if (provenance.canonicalVerifier.keyId !== provenance.signature.keyId) {
+        errors.push(issue("canonical-verifier-key-mismatch", "canonical verifier evidence does not match the publication signing key"));
+      }
+    }
+  }
 
   compareHash(errors, "baseline-catalog", baselinePath, provenance.baselineCatalogSha256);
   compareHash(errors, "candidate-catalog", catalogPath, provenance.candidateCatalogSha256);

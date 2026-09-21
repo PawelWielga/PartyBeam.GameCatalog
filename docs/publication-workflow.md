@@ -4,15 +4,17 @@ This document describes the intended publication path for official PartyBeam gam
 
 ## Current implementation status
 
-The repository currently implements deterministic publication preparation plus a fail-closed final authorization precheck.
+The repository implements deterministic publication preparation, canonical full-package verification through PartyBeam's trusted-tooling CLI, and a fail-closed final authorization precheck.
 
 `tools/prepare-publication.mjs` creates reviewable publication outputs but never uploads anything. Before it writes a candidate, it requires the detached ECDSA P-256 signature to verify against an `active` publisher key from `trust/v1/publisher-keys.json`.
 
-`tools/authorize-publication.mjs` is a separate final gate intended to run immediately before any future GitHub Release mutation. It independently rechecks the candidate catalog, immutable baseline, package bytes, publisher signature/trust state and channel projections. It has no force/bypass option.
+`tools/verify-full-package.mjs` invokes `PartyBeam.PackageVerifier` from a clean `PawelWielga/PartyBeam.Platform` checkout. It records the exact verifier commit and only marks component/full-package verification complete when the canonical verifier returns the expected game, version and publisher identity for the exact prepared asset and trusted key.
+
+`tools/authorize-publication.mjs` is a separate final gate intended to run immediately before GitHub Release mutation. It independently rechecks the candidate catalog, immutable baseline, package bytes, publisher signature/trust state, canonical-verifier evidence and channel projections. It has no force/bypass option.
 
 The committed production trust store currently contains the public key for the one-off `partybeam.placeholder` integration release. Its private key is not committed and it is not the long-lived key for future game publication.
 
-The remaining blocker to a real GitHub Release mutation is full verification of the actual component payload bytes using PartyBeam's canonical `GamePackageVerifier`. PartyBeam PR #19 defines that verifier, but the canonical `.partybeam` container/extraction path is not yet integrated with the publication tooling.
+GitHub Release creation/upload remains a deliberate manual trusted-operator step until the self-hosted workflow and its least-privilege publication credential are configured.
 
 ## Trust and credential boundary
 
@@ -70,9 +72,19 @@ Before public upload, PartyBeam's canonical `GamePackageVerifier` must additiona
 
 The publication-side signature gate and the canonical verifier should agree on trust/key material. The canonical verifier remains authoritative for the complete package because it receives actual component payload bytes.
 
-The integration that invokes this verifier must be the only code allowed to mark both `componentPayloadsVerified` and `fullPackageVerification` as `true`. Hand-editing those flags is not a supported workflow and does not replace the independent authorization checks below.
+After phase 4 creates prepared provenance, run the canonical verifier from a clean PartyBeam.Platform checkout:
 
-Until this step is wired into GameCatalog, no public Release mutation command is provided.
+```bash
+npm run verify-full-package -- \
+  --provenance /tmp/publication.provenance.json \
+  --package /path/to/<gameId>-<version>.partybeam \
+  --trust-store trust/v1/publisher-keys.json \
+  --verifier-project /path/to/PartyBeam.Platform/eng/PartyBeam.PackageVerifier/PartyBeam.PackageVerifier.csproj \
+  --game-contract-version 1.0.0 \
+  --output /tmp/publication.verified.provenance.json
+```
+
+The verifier checkout must have the canonical GitHub origin, the exact canonical project path and a clean worktree. Successful output records the source commit, Game Contract version, verification timestamp, asset hash and key ID. Hand-editing the flags does not satisfy the provenance schema or the independent authorization checks below.
 
 ### 4. Prepare catalog and channel candidates
 
@@ -122,7 +134,7 @@ After canonical full-package verification has produced provenance with both full
 npm run authorize-publication -- \
   --catalog /tmp/catalog.candidate.json \
   --baseline catalog/v1/catalog.json \
-  --provenance /tmp/publication.provenance.json \
+  --provenance /tmp/publication.verified.provenance.json \
   --channels-dir /tmp/catalog-v1-candidate \
   --package /path/to/<gameId>-<version>.partybeam \
   --trust-store trust/v1/publisher-keys.json
@@ -140,7 +152,7 @@ This command independently verifies:
 - exact release identity recorded in provenance;
 - SHA-256 and exact deterministic contents of discovery/stable/test channel documents.
 
-A prepared candidate currently fails this gate by design because its full component verification flags are false. Manually flipping those flags is insufficient to bypass the gate because signature/trust, package bytes, candidate hashes and channel projections are independently recomputed.
+A prepared candidate fails this gate until canonical verification evidence is present. Manually flipping the flags is insufficient because the schema requires verifier evidence and signature/trust, package bytes, candidate hashes and channel projections are independently recomputed.
 
 The command has no `--force` or ignore-verification mode.
 
@@ -171,13 +183,13 @@ A freshly prepared candidate records:
 }
 ```
 
-This is intentionally precise. The publisher signature has been cryptographically verified, but the actual component payloads inside the `.partybeam` container have not yet been independently re-read and checked by the canonical PartyBeam verifier. Therefore the provenance is still **not authorization to publish**.
+This is intentionally precise. The publisher signature has been cryptographically verified, but the actual component payloads inside the `.partybeam` container have not yet been independently re-read and checked by the canonical PartyBeam verifier. Therefore prepared provenance is still **not authorization to publish**. `verify-full-package` produces a separate finalized provenance file after canonical verification succeeds.
 
 The provenance file is audit evidence, not a cryptographic authorization token by itself. Trusted publication tooling must run the final authorization precheck against the actual candidate files and package bytes immediately before mutation.
 
-## Future GitHub mutation phase
+## Trusted GitHub mutation phase
 
-After full PartyBeam package verification is integrated, the trusted publication workflow can add the mutation phase:
+After full PartyBeam package verification succeeds, the trusted publication operator can run the mutation phase:
 
 1. verify the complete package with the canonical PartyBeam verifier;
 2. produce/update provenance only from that successful verifier result;
@@ -198,7 +210,7 @@ A published `(gameId, version)` is immutable.
 
 Corrections require a new SemVer release. Publication tooling must not use GitHub Release asset replacement as a way to change trusted package bytes while preserving an existing version identity.
 
-The preparation command enforces this on catalog metadata already. The future GitHub mutation step must enforce the same rule against existing Release tags/assets before upload.
+The preparation command enforces this on catalog metadata already. The trusted GitHub mutation step must enforce the same rule against existing Release tags/assets before upload.
 
 ## Publisher key lifecycle
 
