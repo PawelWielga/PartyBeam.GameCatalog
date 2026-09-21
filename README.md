@@ -4,6 +4,8 @@ Public, GitHub-only catalog and distribution boundary for official PartyBeam gam
 
 This repository contains machine-readable catalog metadata and public compiled PartyBeam game release assets. Game source code remains in per-game repositories and does not need to be public.
 
+For the exact remaining work and execution order needed for the PartyBeam ecosystem First MVP, see [docs/first-mvp-roadmap.md](docs/first-mvp-roadmap.md). The current critical publication items are the retained first-party publisher key (#11), the signed Grimcellar Test-channel publication (#12), and then the real Reflex publication/end-to-end evidence (#7).
+
 ## Ownership boundary
 
 This repository owns:
