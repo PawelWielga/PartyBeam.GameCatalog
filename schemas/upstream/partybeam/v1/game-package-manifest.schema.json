@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://partybeam.dev/schemas/game-package-manifest.v1.schema.json",
+  "$id": "urn:partybeam:schema:game-package-manifest:v1",
   "title": "PartyBeam Game Package Manifest v1",
   "type": "object",
   "additionalProperties": false,

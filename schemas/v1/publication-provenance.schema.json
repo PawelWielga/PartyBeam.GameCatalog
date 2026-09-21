@@ -81,7 +81,7 @@
       "additionalProperties": false,
       "required": ["repository", "pullRequest", "ref", "commit"],
       "properties": {
-        "repository": { "const": "PawelWielga/PartyBeam" },
+        "repository": { "const": "PawelWielga/PartyBeam.Platform" },
         "pullRequest": { "type": "integer", "minimum": 1 },
         "ref": { "type": "string", "minLength": 1 },
         "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
@@ -90,8 +90,48 @@
     "cryptographicSignatureVerified": { "const": true },
     "componentPayloadsVerified": { "type": "boolean" },
     "fullPackageVerification": { "type": "boolean" },
+    "canonicalVerifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit",
+        "project",
+        "gameContractVersion",
+        "verifiedAt",
+        "releaseAssetSha256",
+        "keyId"
+      ],
+      "properties": {
+        "repository": { "const": "PawelWielga/PartyBeam.Platform" },
+        "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "project": { "const": "eng/PartyBeam.PackageVerifier/PartyBeam.PackageVerifier.csproj" },
+        "gameContractVersion": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+        },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "releaseAssetSha256": { "$ref": "#/$defs/sha256" },
+        "keyId": { "type": "string", "minLength": 1 }
+      }
+    },
     "cryptographicVerificationNote": { "type": "string", "minLength": 1 }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "componentPayloadsVerified": { "const": true },
+          "fullPackageVerification": { "const": true }
+        },
+        "required": ["componentPayloadsVerified", "fullPackageVerification"]
+      },
+      "then": {
+        "properties": { "canonicalVerifier": {} },
+        "required": ["canonicalVerifier"]
+      }
+    }
+  ],
   "$defs": {
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
   }

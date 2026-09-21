@@ -2,7 +2,7 @@
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is `PawelWielga/PartyBeam` draft PR #19 (`feature/02-game-package-manifest`), pinned in `schemas/upstream/partybeam/v1/source.json`. Until that PR is merged, this mapping is implemented and tested here but remains subject to final upstream review.
+The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #19, pinned to merge commit `7747374d55ed20e4cc5e4afc9903c8efce42102d` in `schemas/upstream/partybeam/v1/source.json`.
 
 ## Authority
 
@@ -14,7 +14,7 @@ Publication validation therefore checks separate layers:
 2. signed logical package identity: exact manifest hash, logical package hash and detached signature;
 3. publication trust: `keyId` must resolve to an active public key bound to the exact publisher identity;
 4. catalog projection equality: discovery/compatibility fields must agree with the signed manifest;
-5. full component payload verification: ultimately performed by PartyBeam's canonical `GamePackageVerifier` once the `.partybeam` container/extraction integration is available to publication tooling.
+5. full component payload verification: performed by PartyBeam's canonical `GamePackageVerifier` through `npm run verify-full-package`.
 
 ## Integrity and signature mapping
 
