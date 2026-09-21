@@ -129,8 +129,12 @@ export function authorizePublication({
       if (provenance.canonicalVerifier.releaseAssetSha256 !== provenance.releaseAsset.sha256) {
         errors.push(issue("canonical-verifier-asset-mismatch", "canonical verifier evidence does not match the release asset SHA-256"));
       }
-      if (provenance.canonicalVerifier.keyId !== provenance.signature.keyId) {
-        errors.push(issue("canonical-verifier-key-mismatch", "canonical verifier evidence does not match the publication signing key"));
+      if (provenance.signature) {
+        if (provenance.canonicalVerifier.keyId !== provenance.signature.keyId) {
+          errors.push(issue("canonical-verifier-key-mismatch", "canonical verifier evidence does not match the publication signing key"));
+        }
+      } else if (provenance.canonicalVerifier.keyId !== undefined) {
+        errors.push(issue("canonical-verifier-unexpected-key", "unsigned publication evidence must not claim a signing key"));
       }
     }
   }
@@ -156,6 +160,10 @@ export function authorizePublication({
     return errors;
   }
 
+  if (game.publisher.id !== provenance.publisherId) {
+    errors.push(issue("provenance-publisher-mismatch", "provenance publisherId does not match candidate catalog publisher"));
+  }
+
   if (release.publicationState !== "published") {
     errors.push(issue("release-not-published", "publication candidate release must have publicationState 'published'"));
   }
@@ -179,14 +187,21 @@ export function authorizePublication({
     errors.push(issue("asset-url-mismatch", `expected immutable public asset URL '${expected.assetUrl}'`));
   }
 
+  const signaturePresenceMatches = Boolean(provenance.signature) === Boolean(release.package.signature);
+  const signatureIdentityMatches = !provenance.signature
+    || (
+      provenance.signature.algorithm === release.package.signature?.algorithm
+      && provenance.signature.keyId === release.package.signature?.keyId
+    );
+
   if (
     provenance.releaseAsset.fileName !== release.package.fileName
     || provenance.releaseAsset.sizeBytes !== release.package.sizeBytes
     || provenance.releaseAsset.sha256 !== release.package.integrity.digest
     || provenance.manifestSha256 !== release.package.manifestSha256
     || provenance.packageSha256 !== release.package.packageSha256
-    || provenance.signature.algorithm !== release.package.signature.algorithm
-    || provenance.signature.keyId !== release.package.signature.keyId
+    || !signaturePresenceMatches
+    || !signatureIdentityMatches
   ) {
     errors.push(issue("provenance-release-identity-mismatch", "provenance release identity does not match candidate catalog"));
   }
@@ -201,30 +216,32 @@ export function authorizePublication({
     errors.push(issue(`asset-${error.code}`, error.message));
   }
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-authorization-"));
-  try {
-    const signaturePath = path.join(tempDir, "signature.json");
-    fs.writeFileSync(
-      signaturePath,
-      serializeJson({
-        schemaVersion: 1,
-        manifestSha256: release.package.manifestSha256,
-        packageSha256: release.package.packageSha256,
-        signature: release.package.signature,
-      }),
-      "utf8",
-    );
+  if (release.package.signature) {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-authorization-"));
+    try {
+      const signaturePath = path.join(tempDir, "signature.json");
+      fs.writeFileSync(
+        signaturePath,
+        serializeJson({
+          schemaVersion: 1,
+          manifestSha256: release.package.manifestSha256,
+          packageSha256: release.package.packageSha256,
+          signature: release.package.signature,
+        }),
+        "utf8",
+      );
 
-    const signatureErrors = verifyPackageSignature({
-      signaturePath,
-      publisherId: game.publisher.id,
-      trustStorePath,
-    });
-    for (const error of signatureErrors) {
-      errors.push(issue(error.code, error.message));
+      const signatureErrors = verifyPackageSignature({
+        signaturePath,
+        publisherId: game.publisher.id,
+        trustStorePath,
+      });
+      for (const error of signatureErrors) {
+        errors.push(issue(error.code, error.message));
+      }
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
-  } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 
   const expectedChannels = generateChannelDocuments(catalog);
