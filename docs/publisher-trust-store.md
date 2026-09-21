@@ -4,6 +4,12 @@
 
 It is public by design. Only **public** verification keys belong here. Private signing keys must never be committed to this repository, game repositories or PartyBeam client artifacts.
 
+## First MVP status
+
+The trust-store/signing implementation remains supported, including the already signed placeholder package. However, establishing a retained production signing key and requiring publisher signatures for every official package are deferred to **Post-MVP / Production Ready** under issue #11.
+
+An unsigned First MVP release does not use this trust store for publisher authentication. It is accepted only through the official GameCatalog path with exact hash/integrity and canonical package verification. If signature metadata is present, the normal trust-store rules still apply.
+
 ## Purpose
 
 The trust store answers one narrow question during publication:
@@ -28,7 +34,7 @@ Key retirement is normal rotation. Revocation is a security event and must not b
 
 Every key is bound to one explicit `publisherId`. A valid ECDSA signature from a trusted key is rejected if the manifest publisher identity differs from the key's `publisherId`.
 
-For MVP, normal catalog publication still accepts first-party publishers only. Supporting a future approved external publisher therefore requires both:
+For First MVP, normal catalog publication still accepts first-party publishers only. Publisher signing itself is optional until Post-MVP. Supporting a future approved external publisher therefore requires both:
 
 1. catalog policy explicitly allowing that publisher; and
 2. an active public signing key bound to that publisher in this trust store.
@@ -51,7 +57,7 @@ The signature is IEEE P1363 `r || s` over the already computed 32-byte logical `
 
 The committed store contains the public key for `partybeam.placeholder` `0.1.0`. That package is a first-party integration probe, and its private key is not committed to this repository. The key remains active so PartyBeam installations that bundle the matching public store can acquire and verify the placeholder package; it must not be reused for subsequent game releases.
 
-When a long-lived production key is created:
+When mandatory publisher signing is promoted before Production Ready:
 
 1. keep the private key only in the trusted signing environment;
 2. export its P-256 SubjectPublicKeyInfo PEM public key;
