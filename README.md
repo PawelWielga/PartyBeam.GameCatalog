@@ -118,7 +118,7 @@ The catalog stores those values unchanged for one exact release. Separately, `pa
 
 This distinction is intentional: PartyBeam signs logical package contents independently of ZIP/container layout, while the catalog must also verify the exact bytes fetched from GitHub.
 
-Publication additionally binds each trusted `keyId` to an explicit `publisherId` through `trust/v1/publisher-keys.json`. The store currently contains the public key used for the first-party `partybeam.placeholder` integration package. Its private key is not committed and the key is not intended for further game releases.
+Publication additionally binds each trusted `keyId` to an explicit `publisherId` through `trust/v1/publisher-keys.json`. The store contains the integration-only public key used for `partybeam.placeholder` and the retained `partybeam-first-party-2026-09` public release identity used for production-intended first-party games. Private signing material is never committed.
 
 See `docs/package-contract-alignment.md` and `docs/publisher-trust-store.md`.
 
@@ -175,6 +175,12 @@ npm run audit-public-assets -- --game-id partybeam.example --version 1.2.3
 ```
 
 The audit fails if an asset is unavailable or its downloaded byte count/SHA-256 differs from the immutable catalog record.
+
+Verify that the securely stored retained first-party private key matches the committed public release identity before signing a release:
+
+```bash
+npm run verify-retained-signing-key -- --private-key /secure/path/partybeam-first-party-2026-09.private.pem
+```
 
 Verify the detached ECDSA P-256 signature against an explicitly trusted publisher key:
 
