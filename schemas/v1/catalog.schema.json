@@ -4,12 +4,28 @@
   "title": "PartyBeam Official Game Catalog v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "catalogId", "games"],
+  "required": [
+    "schemaVersion",
+    "catalogId",
+    "games"
+  ],
   "properties": {
-    "schemaVersion": { "const": 1 },
-    "catalogId": { "const": "partybeam-official" },
-    "generatedAt": { "type": "string", "format": "date-time" },
-    "games": { "type": "array", "items": { "$ref": "#/$defs/game" } }
+    "schemaVersion": {
+      "const": 1
+    },
+    "catalogId": {
+      "const": "partybeam-official"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "games": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/game"
+      }
+    }
   },
   "$defs": {
     "identifier": {
@@ -30,59 +46,127 @@
       "type": "string",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*)(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
     },
-    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
     "publisher": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "displayName", "kind"],
+      "required": [
+        "id",
+        "displayName",
+        "kind"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/identifier" },
-        "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
-        "kind": { "enum": ["first-party", "approved-external"] }
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "kind": {
+          "enum": [
+            "first-party",
+            "approved-external"
+          ]
+        }
       }
     },
     "localizedMetadata": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["title", "summary"],
+      "required": [
+        "title",
+        "summary"
+      ],
       "properties": {
-        "title": { "type": "string", "minLength": 1, "maxLength": 100 },
-        "summary": { "type": "string", "minLength": 1, "maxLength": 300 },
-        "descriptionUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
-        "artworkUrl": { "type": "string", "format": "uri", "pattern": "^https://" }
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "descriptionUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "artworkUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        }
       }
     },
     "catalogMetadata": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["defaultLocale", "locales"],
+      "required": [
+        "defaultLocale",
+        "locales"
+      ],
       "properties": {
-        "defaultLocale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" },
-        "supportUrl": { "type": "string", "format": "uri", "pattern": "^https://" },
+        "defaultLocale": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+        },
+        "supportUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
         "locales": {
           "type": "object",
           "minProperties": 1,
-          "propertyNames": { "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" },
-          "additionalProperties": { "$ref": "#/$defs/localizedMetadata" }
+          "propertyNames": {
+            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/localizedMetadata"
+          }
         }
       }
     },
     "assetIntegrity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["algorithm", "digest"],
+      "required": [
+        "algorithm",
+        "digest"
+      ],
       "properties": {
-        "algorithm": { "const": "SHA-256" },
-        "digest": { "$ref": "#/$defs/sha256" }
+        "algorithm": {
+          "const": "SHA-256"
+        },
+        "digest": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "signature": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["algorithm", "keyId", "valueBase64"],
+      "required": [
+        "algorithm",
+        "keyId",
+        "valueBase64"
+      ],
       "properties": {
-        "algorithm": { "const": "ecdsa-p256-sha256-p1363" },
-        "keyId": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "algorithm": {
+          "const": "ecdsa-p256-sha256-p1363"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
         "valueBase64": {
           "type": "string",
           "minLength": 88,
@@ -94,36 +178,76 @@
     "gameContractRange": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["minInclusive", "maxExclusive"],
+      "required": [
+        "minInclusive",
+        "maxExclusive"
+      ],
       "properties": {
-        "minInclusive": { "$ref": "#/$defs/semver" },
-        "maxExclusive": { "$ref": "#/$defs/semver" }
+        "minInclusive": {
+          "$ref": "#/$defs/semver"
+        },
+        "maxExclusive": {
+          "$ref": "#/$defs/semver"
+        }
       }
     },
     "playerCount": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["min", "max"],
+      "required": [
+        "min",
+        "max"
+      ],
       "properties": {
-        "min": { "type": "integer", "minimum": 1, "maximum": 64 },
-        "max": { "type": "integer", "minimum": 1, "maximum": 64 }
+        "min": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
       }
     },
     "capabilityList": {
       "type": "array",
       "uniqueItems": true,
       "items": {
-        "enum": ["camera", "microphone", "location", "gyroscope", "accelerometer", "haptics", "internetAccess"]
+        "enum": [
+          "camera",
+          "microphone",
+          "location",
+          "gyroscope",
+          "accelerometer",
+          "haptics",
+          "internetAccess"
+        ]
       }
     },
     "capabilitySummary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["required", "optional", "internetAccess"],
+      "required": [
+        "required",
+        "optional",
+        "internetAccess"
+      ],
       "properties": {
-        "required": { "$ref": "#/$defs/capabilityList" },
-        "optional": { "$ref": "#/$defs/capabilityList" },
-        "internetAccess": { "enum": ["none", "optional", "required"] }
+        "required": {
+          "$ref": "#/$defs/capabilityList"
+        },
+        "optional": {
+          "$ref": "#/$defs/capabilityList"
+        },
+        "internetAccess": {
+          "enum": [
+            "none",
+            "optional",
+            "required"
+          ]
+        }
       }
     },
     "compatibilityProjection": {
@@ -140,35 +264,60 @@
         "standbyResumeSupported"
       ],
       "properties": {
-        "gameContractApi": { "$ref": "#/$defs/gameContractRange" },
+        "gameContractApi": {
+          "$ref": "#/$defs/gameContractRange"
+        },
         "surfaces": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["tv", "android", "browser"] }
+          "items": {
+            "enum": [
+              "tv",
+              "android",
+              "browser"
+            ]
+          }
         },
         "runtimeLocales": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" }
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+          }
         },
         "catalogLocales": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$" }
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+          }
         },
-        "playerCount": { "$ref": "#/$defs/playerCount" },
+        "playerCount": {
+          "$ref": "#/$defs/playerCount"
+        },
         "controllerTopologies": {
           "type": "array",
           "minItems": 1,
           "maxItems": 1,
           "uniqueItems": true,
-          "items": { "enum": ["one-phone-per-player", "shared-phone"] }
+          "items": {
+            "enum": [
+              "one-phone-per-player",
+              "shared-phone"
+            ]
+          }
         },
-        "capabilities": { "$ref": "#/$defs/capabilitySummary" },
-        "standbyResumeSupported": { "type": "boolean" }
+        "capabilities": {
+          "$ref": "#/$defs/capabilitySummary"
+        },
+        "standbyResumeSupported": {
+          "type": "boolean"
+        }
       }
     },
     "package": {
@@ -179,8 +328,7 @@
         "fileName",
         "integrity",
         "manifestSha256",
-        "packageSha256",
-        "signature"
+        "packageSha256"
       ],
       "properties": {
         "assetUrl": {
@@ -188,47 +336,137 @@
           "format": "uri",
           "pattern": "^https://github\\.com/PawelWielga/PartyBeam\\.GameCatalog/releases/download/"
         },
-        "fileName": { "type": "string", "minLength": 1, "pattern": "\\.partybeam$" },
-        "sizeBytes": { "type": "integer", "minimum": 1 },
-        "integrity": { "$ref": "#/$defs/assetIntegrity" },
-        "manifestSha256": { "$ref": "#/$defs/sha256" },
-        "packageSha256": { "$ref": "#/$defs/sha256" },
-        "signature": { "$ref": "#/$defs/signature" }
+        "fileName": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\.partybeam$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "integrity": {
+          "$ref": "#/$defs/assetIntegrity"
+        },
+        "manifestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "packageSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "signature": {
+          "$ref": "#/$defs/signature"
+        }
       }
     },
     "release": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["version", "channel", "publicationState", "publishedAt", "package", "compatibility"],
+      "required": [
+        "version",
+        "channel",
+        "publicationState",
+        "publishedAt",
+        "package",
+        "compatibility"
+      ],
       "properties": {
-        "version": { "$ref": "#/$defs/semver" },
-        "channel": { "enum": ["stable", "test"] },
-        "publicationState": { "enum": ["published", "delisted"] },
-        "publishedAt": { "type": "string", "format": "date-time" },
-        "package": { "$ref": "#/$defs/package" },
-        "compatibility": { "$ref": "#/$defs/compatibilityProjection" }
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "channel": {
+          "enum": [
+            "stable",
+            "test"
+          ]
+        },
+        "publicationState": {
+          "enum": [
+            "published",
+            "delisted"
+          ]
+        },
+        "publishedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "package": {
+          "$ref": "#/$defs/package"
+        },
+        "compatibility": {
+          "$ref": "#/$defs/compatibilityProjection"
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "channel": { "const": "stable" } }, "required": ["channel"] },
-          "then": { "properties": { "version": { "$ref": "#/$defs/stableSemver" } } }
+          "if": {
+            "properties": {
+              "channel": {
+                "const": "stable"
+              }
+            },
+            "required": [
+              "channel"
+            ]
+          },
+          "then": {
+            "properties": {
+              "version": {
+                "$ref": "#/$defs/stableSemver"
+              }
+            }
+          }
         },
         {
-          "if": { "properties": { "channel": { "const": "test" } }, "required": ["channel"] },
-          "then": { "properties": { "version": { "$ref": "#/$defs/prereleaseSemver" } } }
+          "if": {
+            "properties": {
+              "channel": {
+                "const": "test"
+              }
+            },
+            "required": [
+              "channel"
+            ]
+          },
+          "then": {
+            "properties": {
+              "version": {
+                "$ref": "#/$defs/prereleaseSemver"
+              }
+            }
+          }
         }
       ]
     },
     "game": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["gameId", "publisher", "catalogMetadata", "releases"],
+      "required": [
+        "gameId",
+        "publisher",
+        "catalogMetadata",
+        "releases"
+      ],
       "properties": {
-        "gameId": { "$ref": "#/$defs/identifier" },
-        "publisher": { "$ref": "#/$defs/publisher" },
-        "creator": { "$ref": "#/$defs/publisher" },
-        "catalogMetadata": { "$ref": "#/$defs/catalogMetadata" },
-        "releases": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/release" } }
+        "gameId": {
+          "$ref": "#/$defs/identifier"
+        },
+        "publisher": {
+          "$ref": "#/$defs/publisher"
+        },
+        "creator": {
+          "$ref": "#/$defs/publisher"
+        },
+        "catalogMetadata": {
+          "$ref": "#/$defs/catalogMetadata"
+        },
+        "releases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/release"
+          }
+        }
       }
     }
   }
