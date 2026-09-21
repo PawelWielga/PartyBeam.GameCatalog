@@ -7,7 +7,15 @@
       "algorithm": "ecdsa-p256-sha256-p1363",
       "status": "active",
       "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEd8QH5acQwcWmoxUOUBflAlISHJoy\nKwjzwsdMGv8ZhoYghfQSU1yaW3hIiLVYLtwYsVLTvjlSXqlLg8qXjoGnDw==\n-----END PUBLIC KEY-----",
-      "comment": "Temporary first-party key for the PartyBeam Placeholder integration package. Replace through the documented key lifecycle before publishing further games."
+      "comment": "Integration-only first-party key for the PartyBeam Placeholder package. It remains trusted only for that historical/integration package and must not be used for Grimcellar, Reflex or later releases."
+    },
+    {
+      "keyId": "partybeam-first-party-2026-09",
+      "publisherId": "partybeam",
+      "algorithm": "ecdsa-p256-sha256-p1363",
+      "status": "active",
+      "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEBvtGS9ABSEssvu+q8WgVrwGC6qDs\nOd5uMeIePOF/em9Bqghb71HmtbXlR+z8TG9dx5rMyBkKcjLD2Wl9JIF37Q==\n-----END PUBLIC KEY-----",
+      "comment": "Retained first-party PartyBeam release key for production-intended official game packages. Private key material is stored outside Git and client/package artifacts."
     }
   ]
 }
