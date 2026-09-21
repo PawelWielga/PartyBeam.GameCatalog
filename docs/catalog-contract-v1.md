@@ -27,7 +27,7 @@ Incompatible catalog changes require a new versioned schema/path. Existing v1 do
 
 Changing title, artwork, supported languages or publisher display text does not create a new game identity. A new unrelated title must not reuse an existing `gameId`.
 
-`publisher.id` and `publisher.displayName` are projected from the manifest. `publisher.kind` is catalog admission policy metadata and is deliberately not controlled by the package itself. MVP publication accepts only `first-party`; the schema can represent `approved-external` later without redefining release identity.
+`publisher.id` and `publisher.displayName` are projected from the manifest. `publisher.kind` is catalog admission policy metadata and is deliberately not controlled by the package itself. First MVP publication accepts only `first-party` with the canonical publisher id `partybeam`; the schema can represent `approved-external` later without redefining release identity.
 
 `creator` remains optional catalog metadata when a separate creator identity is useful.
 
