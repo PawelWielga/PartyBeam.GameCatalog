@@ -47,18 +47,39 @@ The signature is IEEE P1363 `r || s` over the already computed 32-byte logical `
 
 `tools/verify-package-signature.mjs` implements this publication-side check with `@noble/curves` P-256 verification using `prehash: false`. `lowS: false` is intentional because PartyBeam's .NET `ECDsa.SignHash` contract does not require low-S normalization.
 
-## Current bootstrap key
+## Current first-party keys
 
-The committed store contains the public key for `partybeam.placeholder` `0.1.0`. That package is a first-party integration probe, and its private key is not committed to this repository. The key remains active so PartyBeam installations that bundle the matching public store can acquire and verify the placeholder package; it must not be reused for subsequent game releases.
+The official store contains two different first-party identities with deliberately different purposes:
 
-When a long-lived production key is created:
+- `partybeam-placeholder-2026-09` remains an integration-only key for the already published `partybeam.placeholder` probe. It must not be reused for Grimcellar, Reflex or later releases.
+- `partybeam-first-party-2026-09` is the retained first-party release identity for production-intended official PartyBeam game packages.
 
-1. keep the private key only in the trusted signing environment;
-2. export its P-256 SubjectPublicKeyInfo PEM public key;
-3. choose a stable `keyId` that can survive key rotation/history;
-4. add the public key as `active` and bind it to publisher `partybeam`;
-5. review the trust-store change independently from a game release and retire the placeholder-only key when supported clients no longer need it for new acquisition;
-6. run the local validation suite before using the key for publication.
+The retained key's public SPKI SHA-256 fingerprint is:
+
+```text
+6e9b228b34f838fad9d1a0dcd93b23eb36d41b905ade60a178046f362533ec25
+```
+
+Only the public key and lifecycle metadata belong in Git.
+
+## Retained private-key handling
+
+The private half of `partybeam-first-party-2026-09` must be stored outside all PartyBeam repositories, release assets, package contents, CI logs and client artifacts.
+
+Operational rules:
+
+1. keep at least one encrypted/offline backup controlled by the project owner;
+2. use the private key only in a trusted signing environment;
+3. never paste the private key into issues, PR comments, build logs or package metadata;
+4. before a release, verify that the local private key matches the committed public identity with:
+   ```bash
+   npm run verify-retained-signing-key -- --private-key /secure/path/partybeam-first-party-2026-09.private.pem
+   ```
+5. when rotating normally, add the replacement key as `active`, publish new packages with it, and change the old key to `retired` only after clients that must acquire new releases trust the replacement;
+6. if compromise is suspected, mark the affected key `revoked`, stop publication immediately, publish a replacement trust snapshot, and treat packages signed only by the revoked identity as untrusted for normal verification;
+7. never delete historical public keys from the trust store merely because they are no longer used for new signing. Preserve lifecycle state so historical verification remains explicit and auditable.
+
+The verification command performs a throwaway local signature over a random logical `packageSha256`, checks that the supplied private key corresponds exactly to the retained public key, and passes the resulting P1363 signature through the normal GameCatalog verifier. It does not print or persist private key material.
 
 ## Local verification
 
