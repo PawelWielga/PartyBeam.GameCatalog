@@ -47,6 +47,31 @@ if (plan.prerelease && plan.tag === provenance.releaseTag && plan.repository ===
   fail("release plan does not preserve provenance identity/channel");
 }
 
+const unsignedProvenance = {
+  ...provenance,
+  gameId: "partybeam.grimcellar",
+  version: "0.1.0-preview.1",
+  releaseTag: "game-partybeam.grimcellar-v0.1.0-preview.1",
+  assetUrl: "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.grimcellar-v0.1.0-preview.1/partybeam.grimcellar-0.1.0-preview.1.partybeam",
+  releaseAsset: {
+    ...provenance.releaseAsset,
+    fileName: "partybeam.grimcellar-0.1.0-preview.1.partybeam",
+  },
+  signature: undefined,
+};
+const unsignedPlan = buildReleasePlan({
+  provenance: unsignedProvenance,
+  packagePath: `C:/tmp/${unsignedProvenance.releaseAsset.fileName}`,
+});
+if (
+  unsignedPlan.notes.includes("Signing key: none (First MVP unsigned-official profile)")
+  && unsignedPlan.tag === unsignedProvenance.releaseTag
+) {
+  pass("unsigned First MVP publication produces a release plan without signature metadata");
+} else {
+  fail("unsigned release plan did not preserve unsigned First MVP publication semantics");
+}
+
 const validReleaseErrors = validatePublishedRelease(plan, {
   tagName: plan.tag,
   isDraft: false,
