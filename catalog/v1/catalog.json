@@ -3,6 +3,77 @@
   "catalogId": "partybeam-official",
   "games": [
     {
+      "gameId": "partybeam.grimcellar",
+      "publisher": {
+        "id": "partybeam",
+        "displayName": "PartyBeam",
+        "kind": "first-party"
+      },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "locales": {
+          "en": {
+            "title": "Grimcellar",
+            "summary": "Explore an endless dungeon together on one shared screen."
+          },
+          "pl": {
+            "title": "Grimcellar",
+            "summary": "Wspólnie przemierzajcie nieskończony loch na jednym ekranie."
+          }
+        }
+      },
+      "releases": [
+        {
+          "version": "0.1.0-preview.1",
+          "channel": "test",
+          "publicationState": "published",
+          "publishedAt": "2026-09-22T07:54:30Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.grimcellar-v0.1.0-preview.1/partybeam.grimcellar-0.1.0-preview.1.partybeam",
+            "fileName": "partybeam.grimcellar-0.1.0-preview.1.partybeam",
+            "sizeBytes": 243072,
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "527550395baa7cdc75d025314bebac300c6698d2cc9976d38b9a236d36be18ae"
+            },
+            "manifestSha256": "0593ad66d4417f2977843ff6810e8df8460535d16856740c9e0eef0319ff76db",
+            "packageSha256": "0fcc77428f381e8bbde66009cc1c07b06a5a5444094710213c1a120ef4e09d26"
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": [
+              "tv",
+              "android"
+            ],
+            "runtimeLocales": [
+              "en",
+              "pl"
+            ],
+            "catalogLocales": [
+              "en",
+              "pl"
+            ],
+            "playerCount": {
+              "min": 1,
+              "max": 4
+            },
+            "controllerTopologies": [
+              "one-phone-per-player"
+            ],
+            "capabilities": {
+              "required": [],
+              "optional": [],
+              "internetAccess": "none"
+            },
+            "standbyResumeSupported": false
+          }
+        }
+      ]
+    },
+    {
       "gameId": "partybeam.placeholder",
       "publisher": {
         "id": "partybeam",

@@ -156,12 +156,23 @@ try {
     fail("publication candidate/provenance output is incomplete or misleading");
   }
 
+  const preparedReflexTestEntry = prepared.channelDocuments.test.games.find(
+    (game) => game.gameId === "partybeam.reflex",
+  );
+  const persistedReflexTestEntry = testChannel.games.find(
+    (game) => game.gameId === "partybeam.reflex",
+  );
+  const preparedReflexStableEntry = prepared.channelDocuments.stable.games.find(
+    (game) => game.gameId === "partybeam.reflex",
+  );
+
   if (
     prepared.channelDocuments.stable.games.some(
       (game) => game.gameId === "partybeam.placeholder" && game.latestVersion === "0.1.0",
     )
-    && prepared.channelDocuments.test.games[0]?.latestVersion === "1.2.0-beta.1"
-    && testChannel.games[0]?.gameId === "partybeam.reflex"
+    && preparedReflexTestEntry?.latestVersion === "1.2.0-beta.1"
+    && persistedReflexTestEntry?.latestVersion === "1.2.0-beta.1"
+    && preparedReflexStableEntry === undefined
   ) {
     pass("prerelease publication is prepared only in the test-channel candidate");
   } else {

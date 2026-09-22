@@ -3,5 +3,13 @@
   "catalogId": "partybeam-official",
   "channel": "test",
   "sourceCatalogPath": "catalog/v1/catalog.json",
-  "games": []
+  "games": [
+    {
+      "gameId": "partybeam.grimcellar",
+      "latestVersion": "0.1.0-preview.1",
+      "versions": [
+        "0.1.0-preview.1"
+      ]
+    }
+  ]
 }
