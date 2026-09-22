@@ -2,18 +2,18 @@
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #19, pinned to merge commit `7747374d55ed20e4cc5e4afc9903c8efce42102d` in `schemas/upstream/partybeam/v1/source.json`.
+The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #56, pinned to canonical `main` commit `b0508d3815e67512ab71de746949cb9a37e444a6` in `schemas/upstream/partybeam/v1/source.json`.
 
 ## Authority
 
-The signed package remains authoritative for runtime facts. The catalog is a public discovery/distribution projection and must never override a different signed manifest value.
+The verified package remains authoritative for runtime facts. The catalog is a public discovery/distribution projection and must never override a different manifest value.
 
 Publication validation therefore checks separate layers:
 
 1. release asset integrity: SHA-256 of the actual downloadable `.partybeam` file;
 2. signed logical package identity: exact manifest hash, logical package hash and detached signature;
 3. publication trust: `keyId` must resolve to an active public key bound to the exact publisher identity;
-4. catalog projection equality: discovery/compatibility fields must agree with the signed manifest;
+4. catalog projection equality: discovery/compatibility fields must agree with the verified manifest;
 5. full component payload verification: performed by PartyBeam's canonical `GamePackageVerifier` through `npm run verify-full-package`.
 
 ## Integrity and signature mapping
@@ -56,7 +56,7 @@ See `docs/publisher-trust-store.md`.
 
 ## Identity mapping
 
-| Catalog | Signed manifest |
+| Catalog | Verified manifest |
 | --- | --- |
 | `game.gameId` | `gameId` |
 | `release.version` | `version` |
@@ -67,7 +67,7 @@ See `docs/publisher-trust-store.md`.
 
 ## Compatibility projection
 
-| Catalog | Signed manifest |
+| Catalog | Verified manifest |
 | --- | --- |
 | `compatibility.gameContractApi.minInclusive` | `gameContract.minimumVersion` |
 | `compatibility.gameContractApi.maxExclusive` | `gameContract.maximumVersionExclusive` |
@@ -90,7 +90,7 @@ Controller topology wire values are normalized for existing catalog consumers:
 - `optional` when it is in `capabilities.optional`;
 - `none` otherwise.
 
-The exact WAN `network.outboundAllowlist` stays in the signed manifest and is not duplicated into catalog discovery metadata. Publication validation still checks PartyBeam's semantic coupling: `internetAccess` requires at least one valid HTTPS allowlist destination, while an allowlist without `internetAccess` is invalid.
+The exact WAN `network.outboundAllowlist` stays in the verified manifest and is not duplicated into catalog discovery metadata. Publication validation still checks PartyBeam's semantic coupling: `internetAccess` requires at least one valid HTTPS allowlist destination, while an allowlist without `internetAccess` is invalid.
 
 ## Component and surface mapping
 
@@ -104,7 +104,7 @@ Publication validation additionally rejects duplicate component IDs and duplicat
 
 `compatibility.runtimeLocales` is the case-insensitive intersection of `components[].runtimeLocales`, meaning languages in this catalog field are safe to advertise as supported across the complete release rather than merely by one component.
 
-Per-component runtime locale differences remain authoritative in the signed manifest.
+Per-component runtime locale differences remain authoritative in the verified manifest.
 
 ## Catalog presentation metadata
 
@@ -152,3 +152,9 @@ PartyBeam's `GamePackageVerifier` remains canonical for **full package verificat
 GitHub Actions are intentionally disabled until the planned self-hosted runner is configured. See `docs/ci-policy.md`.
 
 All validation remains callable locally through deterministic repository scripts and is intended to be wired into the self-hosted workflow later without moving validation logic into workflow YAML.
+
+## First MVP optional-signature profile
+
+The pinned Platform contract permits `signature.json` to omit the publisher `signature` member while retaining mandatory `manifestSha256` and `packageSha256`. GameCatalog mirrors that absence in catalog metadata and provenance with `cryptographicSignatureVerified: false`. If signature metadata is present, the existing trusted-key verification remains mandatory.
+
+This profile applies only to official First MVP distribution and does not introduce arbitrary sideloading.

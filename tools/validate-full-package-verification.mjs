@@ -44,6 +44,7 @@ try {
     schemaVersion: 1,
     gameId: "partybeam.integrity-fixture",
     version: "0.1.0",
+    publisherId: "partybeam",
     channel: "stable",
     releaseTag: "game-partybeam.integrity-fixture-v0.1.0",
     assetUrl: "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.integrity-fixture-v0.1.0/partybeam.integrity-fixture-0.1.0.partybeam",
@@ -97,6 +98,33 @@ try {
     pass("successful canonical verification produces bound full-package evidence");
   } else {
     fail("canonical verification did not finalize provenance correctly");
+  }
+
+  const unsignedProvenance = {
+    ...provenance,
+    cryptographicSignatureVerified: false,
+    cryptographicVerificationNote: "Unsigned First MVP fixture awaiting canonical verification.",
+  };
+  delete unsignedProvenance.signature;
+  const unsignedFinalized = finalizeCanonicalVerification({
+    provenance: unsignedProvenance,
+    packagePath: PACKAGE_PATH,
+    trustStore,
+    trustStorePath,
+    verifierResult,
+    verifierCommit: "3".repeat(40),
+    gameContractVersion: "1.0.0",
+    verifiedAt: "2026-09-21T12:05:00Z",
+  });
+  if (
+    unsignedFinalized.componentPayloadsVerified === true
+    && unsignedFinalized.fullPackageVerification === true
+    && unsignedFinalized.canonicalVerifier.keyId === undefined
+    && unsignedFinalized.cryptographicSignatureVerified === false
+  ) {
+    pass("unsigned First MVP package produces canonical evidence without claiming a signing key");
+  } else {
+    fail("unsigned canonical verification evidence is incorrect");
   }
 
   let identityMismatchRejected = false;

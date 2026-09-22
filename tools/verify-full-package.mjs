@@ -78,12 +78,18 @@ export function finalizeCanonicalVerification({
     throw new Error("Trust store does not match the SHA-256 bound by publication provenance");
   }
 
-  const trustedKey = trustStore.keys?.find((key) => key.keyId === provenance.signature.keyId);
-  if (!trustedKey || trustedKey.status !== "active") {
-    throw new Error(`Active trusted key '${provenance.signature.keyId}' was not found`);
-  }
-  if (trustedKey.algorithm !== provenance.signature.algorithm) {
-    throw new Error("Trusted key algorithm does not match publication provenance");
+  let trustedKey = null;
+  if (provenance.signature) {
+    trustedKey = trustStore.keys?.find((key) => key.keyId === provenance.signature.keyId) ?? null;
+    if (!trustedKey || trustedKey.status !== "active") {
+      throw new Error(`Active trusted key '${provenance.signature.keyId}' was not found`);
+    }
+    if (trustedKey.algorithm !== provenance.signature.algorithm) {
+      throw new Error("Trusted key algorithm does not match publication provenance");
+    }
+    if (trustedKey.publisherId !== provenance.publisherId) {
+      throw new Error("Trusted signing key publisher does not match publication provenance");
+    }
   }
 
   if (verifierResult?.ok !== true) {
@@ -92,9 +98,9 @@ export function finalizeCanonicalVerification({
   if (
     verifierResult.gameId !== provenance.gameId
     || verifierResult.version !== provenance.version
-    || verifierResult.publisherId !== trustedKey.publisherId
+    || verifierResult.publisherId !== provenance.publisherId
   ) {
-    throw new Error("Canonical verifier package identity does not match publication provenance and trust binding");
+    throw new Error("Canonical verifier package identity does not match publication provenance");
   }
   if (!/^[a-f0-9]{40}$/.test(verifierCommit)) {
     throw new Error("Canonical verifier commit must be a full Git commit SHA");
@@ -114,10 +120,11 @@ export function finalizeCanonicalVerification({
       gameContractVersion,
       verifiedAt,
       releaseAssetSha256: packageSha256,
-      keyId: trustedKey.keyId,
+      ...(trustedKey ? { keyId: trustedKey.keyId } : {}),
     },
-    cryptographicVerificationNote:
-      "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component payload hashes, logical package hash and trusted P-256 signature.",
+    cryptographicVerificationNote: trustedKey
+      ? "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component payload hashes, logical package hash and trusted P-256 publisher signature."
+      : "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component payload hashes and logical package hash using the explicit First MVP unsigned-official profile. No publisher signature was present.",
   };
 
   const errors = validatePublicationProvenanceObject(finalized);
@@ -159,16 +166,20 @@ export function verifyFullPackage({
   }
   const verifierCommit = git(repoRoot, "rev-parse", "HEAD");
 
-  const trustedKey = trustStore.keys?.find((key) => key.keyId === provenance.signature.keyId);
-  if (!trustedKey || trustedKey.status !== "active") {
-    throw new Error(`Active trusted key '${provenance.signature.keyId}' was not found`);
+  let trustedKey = null;
+  if (provenance.signature) {
+    trustedKey = trustStore.keys?.find((key) => key.keyId === provenance.signature.keyId) ?? null;
+    if (!trustedKey || trustedKey.status !== "active") {
+      throw new Error(`Active trusted key '${provenance.signature.keyId}' was not found`);
+    }
+    if (trustedKey.publisherId !== provenance.publisherId) {
+      throw new Error("Trusted signing key publisher does not match publication provenance");
+    }
   }
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-full-verification-"));
   try {
-    const publicKeyPath = path.join(tempDir, "trusted-key.pem");
-    fs.writeFileSync(publicKeyPath, trustedKey.publicKeyPem, { encoding: "utf8", mode: 0o600 });
-    const result = run("dotnet", [
+    const verifierArgs = [
       "run",
       "--project",
       projectPath,
@@ -181,9 +192,17 @@ export function verifyFullPackage({
       path.resolve(packagePath),
       "--game-contract-version",
       gameContractVersion,
-      "--trusted-key",
-      `${trustedKey.keyId}=${publicKeyPath}`,
-    ], { cwd: repoRoot, maxBuffer: 10 * 1024 * 1024 });
+    ];
+
+    if (trustedKey) {
+      const publicKeyPath = path.join(tempDir, "trusted-key.pem");
+      fs.writeFileSync(publicKeyPath, trustedKey.publicKeyPem, { encoding: "utf8", mode: 0o600 });
+      verifierArgs.push("--trusted-key", `${trustedKey.keyId}=${publicKeyPath}`);
+    } else {
+      verifierArgs.push("--allow-unsigned");
+    }
+
+    const result = run("dotnet", verifierArgs, { cwd: repoRoot, maxBuffer: 10 * 1024 * 1024 });
 
     let verifierResult;
     try {

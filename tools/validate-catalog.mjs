@@ -12,6 +12,7 @@ export const DEFAULT_SCHEMA_PATH = path.join(REPO_ROOT, "schemas/v1/catalog.sche
 export const DEFAULT_CATALOG_PATH = path.join(REPO_ROOT, "catalog/v1/catalog.json");
 const ENGLISH_LOCALE = "en";
 const INTERNET_ACCESS_CAPABILITY = "internetAccess";
+const FIRST_PARTY_PUBLISHER_ID = "partybeam";
 
 function readJson(filePath) {
   try {
@@ -242,6 +243,16 @@ export function validateCatalogObject(
           "publisher-not-approved-for-mvp",
           `${gamePath}/publisher/kind`,
           "MVP publication currently accepts first-party publishers only",
+        ),
+      );
+    }
+
+    if (enforceCurrentPublisherPolicy && game.publisher.id !== FIRST_PARTY_PUBLISHER_ID) {
+      errors.push(
+        issue(
+          "publisher-id-not-approved-for-mvp",
+          `${gamePath}/publisher/id`,
+          `MVP publication accepts only the official first-party publisher id '${FIRST_PARTY_PUBLISHER_ID}'`,
         ),
       );
     }

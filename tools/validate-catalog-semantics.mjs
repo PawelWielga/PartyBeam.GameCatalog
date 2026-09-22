@@ -32,6 +32,14 @@ function expectCode(name, candidate, code) {
   }
 }
 
+const unapprovedFirstPartyId = clone(baseline);
+unapprovedFirstPartyId.games[0].publisher.id = "another-publisher";
+expectCode(
+  "MVP first-party publisher id is restricted to PartyBeam",
+  unapprovedFirstPartyId,
+  "publisher-id-not-approved-for-mvp",
+);
+
 const invalidContractRange = clone(baseline);
 invalidContractRange.games[0].releases[0].compatibility.gameContractApi.minInclusive = "2.0.0";
 invalidContractRange.games[0].releases[0].compatibility.gameContractApi.maxExclusive = "2.0.0";

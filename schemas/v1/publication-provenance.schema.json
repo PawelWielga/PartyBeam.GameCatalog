@@ -8,6 +8,7 @@
     "schemaVersion",
     "gameId",
     "version",
+    "publisherId",
     "channel",
     "releaseTag",
     "assetUrl",
@@ -19,7 +20,6 @@
     "releaseAsset",
     "manifestSha256",
     "packageSha256",
-    "signature",
     "partyBeamPackageContract",
     "cryptographicSignatureVerified",
     "componentPayloadsVerified",
@@ -27,7 +27,9 @@
     "cryptographicVerificationNote"
   ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": {
+      "const": 1
+    },
     "gameId": {
       "type": "string",
       "minLength": 2,
@@ -38,58 +40,135 @@
       "type": "string",
       "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
     },
-    "channel": { "enum": ["stable", "test"] },
-    "releaseTag": { "type": "string", "minLength": 1 },
-    "assetUrl": { "type": "string", "format": "uri", "pattern": "^https://github\\.com/PawelWielga/PartyBeam\\.GameCatalog/releases/download/" },
-    "publishedAt": { "type": "string", "format": "date-time" },
-    "baselineCatalogSha256": { "$ref": "#/$defs/sha256" },
-    "candidateCatalogSha256": { "$ref": "#/$defs/sha256" },
-    "trustStoreSha256": { "$ref": "#/$defs/sha256" },
+    "channel": {
+      "enum": [
+        "stable",
+        "test"
+      ]
+    },
+    "releaseTag": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assetUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://github\\.com/PawelWielga/PartyBeam\\.GameCatalog/releases/download/"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "baselineCatalogSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "candidateCatalogSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "trustStoreSha256": {
+      "$ref": "#/$defs/sha256"
+    },
     "channelIndexes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["discoverySha256", "stableSha256", "testSha256"],
+      "required": [
+        "discoverySha256",
+        "stableSha256",
+        "testSha256"
+      ],
       "properties": {
-        "discoverySha256": { "$ref": "#/$defs/sha256" },
-        "stableSha256": { "$ref": "#/$defs/sha256" },
-        "testSha256": { "$ref": "#/$defs/sha256" }
+        "discoverySha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stableSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "testSha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
     "releaseAsset": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["fileName", "sizeBytes", "sha256"],
+      "required": [
+        "fileName",
+        "sizeBytes",
+        "sha256"
+      ],
       "properties": {
-        "fileName": { "type": "string", "pattern": "\\.partybeam$" },
-        "sizeBytes": { "type": "integer", "minimum": 1 },
-        "sha256": { "$ref": "#/$defs/sha256" }
+        "fileName": {
+          "type": "string",
+          "pattern": "\\.partybeam$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
       }
     },
-    "manifestSha256": { "$ref": "#/$defs/sha256" },
-    "packageSha256": { "$ref": "#/$defs/sha256" },
+    "manifestSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "packageSha256": {
+      "$ref": "#/$defs/sha256"
+    },
     "signature": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["algorithm", "keyId"],
+      "required": [
+        "algorithm",
+        "keyId"
+      ],
       "properties": {
-        "algorithm": { "const": "ecdsa-p256-sha256-p1363" },
-        "keyId": { "type": "string", "minLength": 1 }
+        "algorithm": {
+          "const": "ecdsa-p256-sha256-p1363"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "partyBeamPackageContract": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "pullRequest", "ref", "commit"],
+      "required": [
+        "repository",
+        "pullRequest",
+        "ref",
+        "commit"
+      ],
       "properties": {
-        "repository": { "const": "PawelWielga/PartyBeam.Platform" },
-        "pullRequest": { "type": "integer", "minimum": 1 },
-        "ref": { "type": "string", "minLength": 1 },
-        "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+        "repository": {
+          "const": "PawelWielga/PartyBeam.Platform"
+        },
+        "pullRequest": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
       }
     },
-    "cryptographicSignatureVerified": { "const": true },
-    "componentPayloadsVerified": { "type": "boolean" },
-    "fullPackageVerification": { "type": "boolean" },
+    "cryptographicSignatureVerified": {
+      "type": "boolean"
+    },
+    "componentPayloadsVerified": {
+      "type": "boolean"
+    },
+    "fullPackageVerification": {
+      "type": "boolean"
+    },
     "canonicalVerifier": {
       "type": "object",
       "additionalProperties": false,
@@ -99,40 +178,101 @@
         "project",
         "gameContractVersion",
         "verifiedAt",
-        "releaseAssetSha256",
-        "keyId"
+        "releaseAssetSha256"
       ],
       "properties": {
-        "repository": { "const": "PawelWielga/PartyBeam.Platform" },
-        "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
-        "project": { "const": "eng/PartyBeam.PackageVerifier/PartyBeam.PackageVerifier.csproj" },
+        "repository": {
+          "const": "PawelWielga/PartyBeam.Platform"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "project": {
+          "const": "eng/PartyBeam.PackageVerifier/PartyBeam.PackageVerifier.csproj"
+        },
         "gameContractVersion": {
           "type": "string",
           "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
         },
-        "verifiedAt": { "type": "string", "format": "date-time" },
-        "releaseAssetSha256": { "$ref": "#/$defs/sha256" },
-        "keyId": { "type": "string", "minLength": 1 }
+        "verifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "releaseAssetSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
-    "cryptographicVerificationNote": { "type": "string", "minLength": 1 }
+    "cryptographicVerificationNote": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publisherId": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])$"
+    }
   },
   "allOf": [
     {
       "if": {
         "properties": {
-          "componentPayloadsVerified": { "const": true },
-          "fullPackageVerification": { "const": true }
+          "componentPayloadsVerified": {
+            "const": true
+          },
+          "fullPackageVerification": {
+            "const": true
+          }
         },
-        "required": ["componentPayloadsVerified", "fullPackageVerification"]
+        "required": [
+          "componentPayloadsVerified",
+          "fullPackageVerification"
+        ]
       },
       "then": {
-        "properties": { "canonicalVerifier": {} },
-        "required": ["canonicalVerifier"]
+        "properties": {
+          "canonicalVerifier": {}
+        },
+        "required": [
+          "canonicalVerifier"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "signature": {}
+        },
+        "required": [
+          "signature"
+        ]
+      },
+      "then": {
+        "properties": {
+          "cryptographicSignatureVerified": {
+            "const": true
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "cryptographicSignatureVerified": {
+            "const": false
+          }
+        }
       }
     }
   ],
   "$defs": {
-    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
   }
 }

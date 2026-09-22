@@ -4,11 +4,11 @@ This document defines the semantics of `schemas/v1/catalog.schema.json` and the 
 
 ## Status
 
-Catalog v1 is aligned with the signed game-package v1 contract merged in `PawelWielga/PartyBeam.Platform` PR #19. The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
+Catalog v1 is aligned with the game-package v1 integrity/signature contract merged in `PawelWielga/PartyBeam.Platform` PR #19. The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
 
 PartyBeam.Platform remains authoritative for the package format and cryptographic verification. Any upstream contract change must refresh the pinned schemas and projection fixtures before publication tooling is considered synchronized.
 
-The catalog must never weaken or override a signed package manifest.
+The catalog must never weaken or override the package manifest/integrity envelope. When a publisher signature is present, it must also preserve and verify that signature projection.
 
 ## Document identity
 
@@ -27,7 +27,7 @@ Incompatible catalog changes require a new versioned schema/path. Existing v1 do
 
 Changing title, artwork, supported languages or publisher display text does not create a new game identity. A new unrelated title must not reuse an existing `gameId`.
 
-`publisher.id` and `publisher.displayName` are projected from the signed manifest. `publisher.kind` is catalog admission policy metadata and is deliberately not controlled by the package itself. MVP publication accepts only `first-party`; the schema can represent `approved-external` later without redefining release identity.
+`publisher.id` and `publisher.displayName` are projected from the manifest. `publisher.kind` is catalog admission policy metadata and is deliberately not controlled by the package itself. First MVP publication accepts only `first-party` with the canonical publisher id `partybeam`; the schema can represent `approved-external` later without redefining release identity.
 
 `creator` remains optional catalog metadata when a separate creator identity is useful.
 
@@ -37,9 +37,9 @@ Changing title, artwork, supported languages or publisher display text does not 
 
 - `defaultLocale` selects the preferred catalog fallback;
 - `locales` contains localized title/summary plus optional official presentation references;
-- `supportUrl` mirrors the signed manifest support destination when one is declared.
+- `supportUrl` mirrors the verified manifest support destination when one is declared.
 
-For signed package v1, English (`en`) is required as the terminal catalog fallback. Publication validation checks that catalog locales agree with the signed manifest and that catalog summaries/titles do not contradict signed author metadata.
+For package v1, English (`en`) is required as the terminal catalog fallback. Publication validation checks that catalog locales agree with the verified manifest and that catalog summaries/titles do not contradict package author metadata.
 
 Age rating, monetization and advertising metadata remain outside the MVP contract.
 
@@ -85,23 +85,26 @@ Delisting is a distribution state only. It does not invalidate or delete an alre
 
 This protects transport/download integrity for the physical release asset.
 
-### Signed logical package identity
+### Logical package identity and optional publisher signature
 
-PartyBeam package v1 uses detached `signature.json` metadata. GameCatalog mirrors it unchanged:
+PartyBeam package v1 uses `signature.json` as an integrity/signature envelope. GameCatalog always mirrors:
 
 - `manifestSha256`: SHA-256 of the exact `manifest.json` bytes;
-- `packageSha256`: SHA-256 of PartyBeam's deterministic logical package-content descriptor;
+- `packageSha256`: SHA-256 of PartyBeam's deterministic logical package-content descriptor.
+
+When publisher signing is present, GameCatalog additionally mirrors:
+
 - `signature.algorithm`: `ecdsa-p256-sha256-p1363`;
 - `signature.keyId`: trusted signing-key identifier;
 - `signature.valueBase64`: 64-byte IEEE P1363 ECDSA signature encoded as canonical Base64.
 
-The logical `packageSha256` is intentionally not the same concept as the `.partybeam` asset-byte hash. PartyBeam signs logical release contents independently of container repacking, while the catalog also pins the exact bytes users download.
+The logical `packageSha256` is intentionally not the same concept as the `.partybeam` asset-byte hash. First MVP may omit publisher signature metadata while still pinning both logical identity and exact downloadable bytes.
 
 See `docs/package-contract-alignment.md` for the field mapping and descriptor rules.
 
 ## Compatibility projection
 
-`compatibility` allows PartyBeam to perform discovery/filtering before fully preparing a package. The signed manifest remains authoritative.
+`compatibility` allows PartyBeam to perform discovery/filtering before fully preparing a package. The manifest remains authoritative.
 
 The projection mirrors:
 
@@ -139,7 +142,7 @@ Publication validation fails closed and currently enforces at least:
 5. valid stable/test SemVer classification;
 6. `gameContractApi.minInclusive < gameContractApi.maxExclusive`;
 7. `playerCount.min <= playerCount.max`;
-8. English runtime/catalog fallback required by signed manifest v1;
+8. English runtime/catalog fallback required by manifest v1;
 9. no capability may be both required and optional;
 10. derived `internetAccess` summary must agree with required/optional capability declarations;
 11. catalog locale declarations must have matching catalog metadata;
@@ -148,14 +151,14 @@ Publication validation fails closed and currently enforces at least:
 14. `manifest.json` and `signature.json` must pass the pinned upstream PartyBeam v1 schemas;
 15. exact manifest bytes must hash to both envelope and catalog `manifestSha256`;
 16. PartyBeam's deterministic logical descriptor must hash to both envelope and catalog `packageSha256`;
-17. signature algorithm/key/value metadata must match the detached envelope;
+17. when present, signature algorithm/key/value metadata must match the envelope;
 18. game, version and publisher identity must agree with the manifest;
 19. Game Contract, players, topology, surfaces, locales, capabilities and standby/resume projection must agree with the manifest;
-20. localized title/summary and support URL projection must agree with signed package metadata;
+20. localized title/summary and support URL projection must agree with package metadata;
 21. every manifest component `releaseVersion` must equal the exact package version;
 22. only publisher identities admitted by current official-catalog policy may be newly published.
 
-Cryptographic ECDSA verification against the production trusted-key registry remains owned by PartyBeam's canonical package verifier. Once upstream PR #19 is merged and available to publication tooling, GameCatalog should share/invoke that verifier rather than maintain a second independent cryptographic implementation.
+For signed packages, cryptographic ECDSA verification against the production trusted-key registry remains mandatory. First MVP unsigned official packages instead rely on the explicit integrity-only policy plus canonical full-package verification. Once upstream PR #19 is merged and available to publication tooling, GameCatalog should share/invoke that verifier rather than maintain a second independent cryptographic implementation.
 
 ## Public URL stability
 
@@ -180,7 +183,7 @@ Fixtures live under `fixtures/v1/`:
 - `valid/`: structurally and semantically valid catalog examples;
 - `invalid/`: catalog-shape/semantic rejection examples;
 - `assets/` + `integrity/`: physical package-byte hash fixtures;
-- `package-contract/`: signed-manifest/signature-envelope projection fixtures, including valid mapping, deliberate catalog disagreement, malformed manifest and invalid signature metadata.
+- `package-contract/`: manifest/integrity-envelope and signed-envelope projection fixtures, including valid mapping, deliberate catalog disagreement, malformed manifest and invalid signature metadata.
 
 The local test suite also creates in-memory mutations for immutable release identity, external-publisher policy, Game Contract ordering, English fallback and Internet-access summary consistency.
 
