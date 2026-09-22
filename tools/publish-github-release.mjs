@@ -60,7 +60,7 @@ export function buildReleasePlan({ provenance, packagePath }) {
       "",
       `Asset SHA-256: ${provenance.releaseAsset.sha256}`,
       `Logical package SHA-256: ${provenance.packageSha256}`,
-      `Signing key: ${provenance.signature.keyId}`,
+      `Signing key: ${provenance.signature?.keyId ?? "none (First MVP unsigned-official profile)"}`,
       `Canonical verifier commit: ${provenance.canonicalVerifier.commit}`,
     ].join("\n"),
     prerelease: provenance.channel === "test",
