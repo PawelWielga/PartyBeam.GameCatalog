@@ -6,7 +6,7 @@ PartyBeam.GameCatalog is the public distribution/trust boundary for the ecosyste
 
 It must prove that real private-source PartyBeam games can be built, integrity-verified, published as immutable public compiled packages, discovered through stable/test indexes, downloaded anonymously and verified by PartyBeam.Platform. Mandatory publisher signing is Post-MVP.
 
-Status snapshot: 2026-09-21.
+Status snapshot: 2026-09-24.
 
 ## Current state
 
@@ -101,6 +101,14 @@ Order:
 10. run the documented Reflex end-to-end smoke through PartyBeam.
 
 Keep Reflex prerelease on Test until its real E2E stability gates pass.
+
+Current state:
+
+- `partybeam.reflex@0.1.0-alpha.0` is published in Test through catalog commit `86370a468b5970446b0c099c4eea543f327805f9`;
+- the public Release/tag/asset and anonymous byte identity have been established;
+- Reflex #9 / Platform #16 real-path E2E remains open;
+- the #9 audit found a game-owned resource-pressure adaptation gap in alpha.0, so Reflex PR #15 prepares `0.1.0-alpha.1`;
+- final E2E evidence must pin the later immutable release after that fix is validated and published rather than attributing post-publication source changes to alpha.0.
 
 ### GC-MVP-05 - close publication evidence
 
