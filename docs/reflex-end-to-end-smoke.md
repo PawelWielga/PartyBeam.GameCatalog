@@ -203,7 +203,7 @@ At least once, using a non-production candidate or disposable download, prove th
 - one byte changed in `.partybeam` -> transport SHA-256 mismatch;
 - manifest bytes changed -> `manifestSha256` mismatch;
 - component bytes changed -> component hash failure in PartyBeam verifier;
-- `packageSha256` changed -> logical hash mismatch/signature failure;
+- `packageSha256` changed -> logical hash mismatch, plus signature failure when the candidate is signed;
 - for a signed-package candidate, signature byte changed -> invalid ECDSA signature;
 - for a signed-package candidate, unknown `keyId` -> untrusted key;
 - for a signed-package candidate, trusted key bound to another publisher -> publisher/key mismatch;
