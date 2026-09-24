@@ -150,6 +150,80 @@
           }
         }
       ]
+    },
+    {
+      "gameId": "partybeam.reflex",
+      "publisher": {
+        "id": "partybeam",
+        "displayName": "PartyBeam",
+        "kind": "first-party"
+      },
+      "catalogMetadata": {
+        "defaultLocale": "en",
+        "locales": {
+          "en": {
+            "title": "Reflex",
+            "summary": "A fast reaction game built to validate PartyBeam timing and local multiplayer."
+          },
+          "pl": {
+            "title": "Reflex",
+            "summary": "Szybka gra refleksowa służąca do walidacji timingu i lokalnego multiplayera PartyBeam."
+          }
+        }
+      },
+      "releases": [
+        {
+          "version": "0.1.0-alpha.0",
+          "channel": "test",
+          "publicationState": "published",
+          "publishedAt": "2026-09-24T13:37:01.2320022Z",
+          "package": {
+            "assetUrl": "https://github.com/PawelWielga/PartyBeam.GameCatalog/releases/download/game-partybeam.reflex-v0.1.0-alpha.0/partybeam.reflex-0.1.0-alpha.0.partybeam",
+            "fileName": "partybeam.reflex-0.1.0-alpha.0.partybeam",
+            "sizeBytes": 147065,
+            "integrity": {
+              "algorithm": "SHA-256",
+              "digest": "f6506a8dbeff7ba0a9c8ea8dd0394cb5a37a80910f8e4ecc5e1f90a17f205f81"
+            },
+            "manifestSha256": "bd6cc7ca658859d36ec54c439b6e8b81fb42d51678d61eca425cdbaa1a944d76",
+            "packageSha256": "0ab481f4817a53747a759aae65dc1b4e8618ee61f1461615b4195d65d0588dc8"
+          },
+          "compatibility": {
+            "gameContractApi": {
+              "minInclusive": "1.0.0",
+              "maxExclusive": "2.0.0"
+            },
+            "surfaces": [
+              "tv",
+              "android",
+              "browser"
+            ],
+            "runtimeLocales": [
+              "en",
+              "pl"
+            ],
+            "catalogLocales": [
+              "en",
+              "pl"
+            ],
+            "playerCount": {
+              "min": 2,
+              "max": 8
+            },
+            "controllerTopologies": [
+              "one-phone-per-player"
+            ],
+            "capabilities": {
+              "required": [],
+              "optional": [
+                "haptics"
+              ],
+              "internetAccess": "none"
+            },
+            "standbyResumeSupported": true
+          }
+        }
+      ]
     }
   ]
 }
