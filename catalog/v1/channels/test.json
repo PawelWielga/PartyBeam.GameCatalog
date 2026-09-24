@@ -10,6 +10,13 @@
       "versions": [
         "0.1.0-preview.1"
       ]
+    },
+    {
+      "gameId": "partybeam.reflex",
+      "latestVersion": "0.1.0-alpha.0",
+      "versions": [
+        "0.1.0-alpha.0"
+      ]
     }
   ]
 }
