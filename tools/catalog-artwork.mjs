@@ -4,6 +4,7 @@ import path from "node:path";
 import zlib from "node:zlib";
 
 export const MAX_COVER_BYTES = 8 * 1024 * 1024;
+export const MAX_INFLATED_COVER_BYTES = 64 * 1024 * 1024;
 export const RECOMMENDED_COVER_WIDTH = 1024;
 export const RECOMMENDED_COVER_HEIGHT = 1536;
 
@@ -123,7 +124,9 @@ export function inspectPng(bytes) {
   }
 
   try {
-    zlib.inflateSync(Buffer.concat(idatChunks));
+    zlib.inflateSync(Buffer.concat(idatChunks), {
+      maxOutputLength: MAX_INFLATED_COVER_BYTES,
+    });
   } catch {
     throw new Error("Catalog cover PNG contains invalid compressed image data.");
   }
