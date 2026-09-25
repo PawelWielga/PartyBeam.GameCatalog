@@ -112,6 +112,7 @@ export async function publishGitHubRelease({
   provenancePath,
   channelsDir,
   packagePath,
+  artworkDir = null,
   trustStorePath = DEFAULT_TRUST_STORE_PATH,
   execute = false,
   gh = runGh,
@@ -123,6 +124,7 @@ export async function publishGitHubRelease({
     provenancePath,
     channelsDir,
     packagePath,
+    artworkDir,
     trustStorePath,
   });
   if (authorizationErrors.length > 0) {
@@ -196,6 +198,7 @@ function parseArgs(argv) {
     else if (value === "--provenance") options.provenancePath = path.resolve(argv[++index]);
     else if (value === "--channels-dir") options.channelsDir = path.resolve(argv[++index]);
     else if (value === "--package") options.packagePath = path.resolve(argv[++index]);
+    else if (value === "--artwork-dir") options.artworkDir = path.resolve(argv[++index]);
     else if (value === "--trust-store") options.trustStorePath = path.resolve(argv[++index]);
     else if (value === "--execute") options.execute = true;
     else throw new Error(`Unknown argument: ${value}`);
