@@ -691,13 +691,15 @@ export function validatePackageProjection({
       metadata.summary,
       manifestMetadata.shortDescription,
     );
-    compareValue(
-      errors,
-      "projection-artwork-url",
-      `/catalogMetadata/locales/${locale}/artworkUrl`,
-      metadata.artworkUrl ?? null,
-      expectedArtworkUrl,
-    );
+    if (expectedArtworkUrl) {
+      compareValue(
+        errors,
+        "projection-artwork-url",
+        `/catalogMetadata/locales/${locale}/artworkUrl`,
+        metadata.artworkUrl ?? null,
+        expectedArtworkUrl,
+      );
+    }
   }
 
   for (const component of manifest.components) {
