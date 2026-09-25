@@ -105,6 +105,10 @@
         },
         "supportUrl": {
           "type": ["string", "null"]
+        },
+        "artwork": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/catalogArtwork" }
         }
       }
     },
@@ -173,6 +177,17 @@
         "entryPoint": { "$ref": "#/$defs/safeRelativePath" },
         "sha256": { "$ref": "#/$defs/sha256" },
         "runtimeLocales": { "$ref": "#/$defs/locales" }
+      }
+    },
+    "catalogArtwork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "artifactPath", "sha256"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stableIdentifier" },
+        "kind": { "$ref": "#/$defs/stableIdentifier" },
+        "artifactPath": { "$ref": "#/$defs/safeRelativePath" },
+        "sha256": { "$ref": "#/$defs/sha256" }
       }
     },
     "localizedCatalogMetadata": {
