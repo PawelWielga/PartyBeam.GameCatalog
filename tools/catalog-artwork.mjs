@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 
 export const MAX_COVER_BYTES = 8 * 1024 * 1024;
 export const RECOMMENDED_COVER_WIDTH = 1024;
@@ -42,18 +43,91 @@ export function findCanonicalCover(manifest) {
   return covers[0] ?? null;
 }
 
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
 export function inspectPng(bytes) {
   if (!Buffer.isBuffer(bytes)) bytes = Buffer.from(bytes);
-  if (
-    bytes.length < 24
-    || !bytes.subarray(0, 8).equals(PNG_SIGNATURE)
-    || bytes.toString("ascii", 12, 16) !== "IHDR"
-  ) {
-    throw new Error("Catalog cover must be a valid PNG with an IHDR header.");
+  if (bytes.length < 8 || !bytes.subarray(0, 8).equals(PNG_SIGNATURE)) {
+    throw new Error("Catalog cover must be a PNG file.");
   }
 
-  const width = bytes.readUInt32BE(16);
-  const height = bytes.readUInt32BE(20);
+  let offset = 8;
+  let width = null;
+  let height = null;
+  let sawIhdr = false;
+  let sawIdat = false;
+  let sawIend = false;
+  const idatChunks = [];
+
+  while (offset < bytes.length) {
+    if (offset + 12 > bytes.length) {
+      throw new Error("Catalog cover PNG has a truncated chunk.");
+    }
+
+    const length = bytes.readUInt32BE(offset);
+    const typeStart = offset + 4;
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    const crcOffset = dataEnd;
+    const nextOffset = crcOffset + 4;
+    if (nextOffset > bytes.length) {
+      throw new Error("Catalog cover PNG has a truncated chunk payload.");
+    }
+
+    const type = bytes.toString("ascii", typeStart, dataStart);
+    const expectedCrc = bytes.readUInt32BE(crcOffset);
+    const actualCrc = crc32(bytes.subarray(typeStart, dataEnd));
+    if (expectedCrc !== actualCrc) {
+      throw new Error(`Catalog cover PNG chunk '${type}' has an invalid CRC.`);
+    }
+
+    if (!sawIhdr) {
+      if (type !== "IHDR" || length !== 13) {
+        throw new Error("Catalog cover PNG must start with a 13-byte IHDR chunk.");
+      }
+      width = bytes.readUInt32BE(dataStart);
+      height = bytes.readUInt32BE(dataStart + 4);
+      sawIhdr = true;
+    } else if (type === "IHDR") {
+      throw new Error("Catalog cover PNG contains more than one IHDR chunk.");
+    }
+
+    if (type === "IDAT") {
+      sawIdat = true;
+      idatChunks.push(bytes.subarray(dataStart, dataEnd));
+    }
+
+    if (type === "IEND") {
+      if (length !== 0) {
+        throw new Error("Catalog cover PNG IEND chunk must be empty.");
+      }
+      sawIend = true;
+      offset = nextOffset;
+      break;
+    }
+
+    offset = nextOffset;
+  }
+
+  if (!sawIhdr || !sawIdat || !sawIend || offset !== bytes.length) {
+    throw new Error("Catalog cover must be a complete PNG with IHDR, IDAT and terminal IEND chunks.");
+  }
+
+  try {
+    zlib.inflateSync(Buffer.concat(idatChunks));
+  } catch {
+    throw new Error("Catalog cover PNG contains invalid compressed image data.");
+  }
+
   if (width < 1 || height < 1) {
     throw new Error("Catalog cover PNG dimensions must be positive.");
   }
