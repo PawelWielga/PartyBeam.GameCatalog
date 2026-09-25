@@ -54,9 +54,10 @@ The private game repository produces:
 
 - `<gameId>-<version>.partybeam`;
 - exact `manifest.json`;
-- detached `signature.json` generated according to PartyBeam package manifest v1.
+- detached `signature.json` generated according to PartyBeam package manifest v1;
+- when a canonical cover is declared, the same game-owned PNG at its manifest `catalog.artwork[].artifactPath` (normally `catalog/cover.png`) in the publication build root and inside the `.partybeam` package.
 
-Every component in the package belongs to the same exact SemVer release.
+Every component in the package belongs to the same exact SemVer release. The game repository/build output is the source of truth for artwork; GameCatalog must not require a separately hand-maintained cover.
 
 ### 2. Publication-side integrity and optional signature verification
 
@@ -73,7 +74,7 @@ When `signature` is present it additionally verifies:
 
 For an unsigned First MVP release, provenance explicitly records `cryptographicSignatureVerified: false`; it must never imply publisher authentication.
 
-This phase still does **not** prove that every component byte physically contained in the `.partybeam` asset matches the component hashes declared by the manifest.
+This phase still does **not** prove that every component or catalog-artwork byte physically contained in the `.partybeam` asset matches the hashes declared by the manifest.
 
 ### 3. Canonical PartyBeam full-package verification
 
@@ -81,6 +82,7 @@ Before public upload, PartyBeam's canonical `GamePackageVerifier` must additiona
 
 - manifest semantics;
 - component presence and hashes;
+- every declared catalog-artwork payload presence and SHA-256;
 - exact component release identity;
 - deterministic logical package hash;
 - trusted `keyId` and ECDSA P-256/SHA-256/P1363 signature when signature metadata is present.
@@ -118,6 +120,8 @@ npm run prepare-publication -- \
   --published-at 2026-09-14T08:00:00Z \
   --output /tmp/catalog.candidate.json \
   --channels-output-dir /tmp/catalog-v1-candidate \
+  --artwork-source-root /path/to/game-build \
+  --artwork-output-dir /tmp/catalog-artwork-candidate \
   --provenance /tmp/publication.provenance.json
 ```
 
@@ -130,6 +134,9 @@ The command:
 - calculates the physical release-asset SHA-256 and size;
 - derives stable/test channel from SemVer;
 - derives catalog metadata and compatibility projection from the manifest;
+- when `kind: "cover"` is declared, reads that game-owned source asset, checks the manifest SHA-256, validates a complete PNG, requires exact 2:3 aspect ratio and at most 8 MiB, then stages `artwork/v1/<gameId>/cover.png`;
+- projects the deterministic raw GitHub cover URL into every catalog locale;
+- recommends 1024×1536 cover dimensions while keeping the exact 2:3 ratio authoritative;
 - constructs the deterministic GitHub Release tag and public asset URL;
 - validates the candidate against the catalog schema and semantic rules;
 - validates catalog ↔ manifest/signature projection;
@@ -139,7 +146,7 @@ The command:
 - deterministically generates `channels.json`, `channels/stable.json` and `channels/test.json` from the candidate catalog;
 - writes an audit/provenance JSON file binding SHA-256 hashes of all candidate documents.
 
-No GitHub mutation occurs in this phase.
+No GitHub mutation occurs in this phase. Games without a declared canonical cover do not need the two artwork arguments and remain valid. When a cover is declared, `--artwork-source-root` may be omitted only when the manifest directory itself is the build root containing the declared relative artwork path; `--artwork-output-dir` is required.
 
 ### 5. Final publication authorization precheck
 
@@ -152,6 +159,7 @@ npm run authorize-publication -- \
   --provenance /tmp/publication.verified.provenance.json \
   --channels-dir /tmp/catalog-v1-candidate \
   --package /path/to/<gameId>-<version>.partybeam \
+  --artwork-dir /tmp/catalog-artwork-candidate \
   --trust-store trust/v1/publisher-keys.json
 ```
 
@@ -163,6 +171,7 @@ This command independently verifies:
 - immutable candidate-vs-baseline rules;
 - exact package filename, byte size and transport SHA-256;
 - exact publisher identity and, when present, publisher/key binding plus ECDSA signature from the candidate release;
+- when cover provenance exists, exact staged cover path, bytes, PNG structure, 2:3 dimensions, SHA-256 and locale `artworkUrl` projection;
 - deterministic Release tag and public asset URL;
 - exact release identity recorded in provenance;
 - SHA-256 and exact deterministic contents of discovery/stable/test channel documents.
@@ -186,7 +195,8 @@ The generated provenance includes:
 - publisher ID and optional signature algorithm/key ID;
 - pinned PartyBeam package-contract source commit;
 - the requested publication timestamp;
-- explicit verification-state flags.
+- explicit verification-state flags;
+- when a cover exists: its manifest source path, generated catalog path/URL, PNG dimensions, byte size and SHA-256.
 
 A freshly prepared signed candidate records `cryptographicSignatureVerified: true`; an unsigned First MVP candidate records `false`. Both initially record `componentPayloadsVerified: false` and `fullPackageVerification: false`.
 
@@ -205,8 +215,11 @@ npm run publish-github-release -- \
   --provenance /tmp/publication.verified.provenance.json \
   --channels-dir /tmp/catalog-v1-candidate \
   --package /path/to/<gameId>-<version>.partybeam \
+  --artwork-dir /tmp/catalog-artwork-candidate \
   --trust-store trust/v1/publisher-keys.json
 ```
+
+For releases without a canonical cover, omit `--artwork-dir`.
 
 The preflight reruns `authorize-publication` and confirms through the GitHub API that neither the deterministic Release nor its tag exists. To perform the mutation, rerun the exact command with `--execute`.
 
@@ -219,7 +232,7 @@ The command then:
 5. validates tag, stable/prerelease state, filename, asset count and size through the GitHub API;
 6. downloads the public asset without authorization headers and verifies its SHA-256 and size.
 
-After successful upload verification, submit the generated catalog and channel candidates as one reviewed repository change and rerun all local validation. Only merging those files makes the release discoverable through canonical indexes.
+After successful upload verification, submit the generated catalog, channel candidates and any staged `artwork/v1/<gameId>/cover.png` as one reviewed repository change and rerun all local validation. Only merging those files makes the release discoverable through canonical indexes.
 
 If any step fails, publication must stop. A failed or partial attempt must never be papered over by changing bytes behind the same exact version.
 
