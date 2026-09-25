@@ -123,6 +123,44 @@ try {
     fail(`missing fail-closed verification errors: ${[...blockedCodes].join(", ")}`);
   }
 
+  const manualArtworkCatalogPath = path.join(tempDir, "manual-artwork-catalog.json");
+  const manualArtworkCatalog = structuredClone(catalog);
+  for (const metadata of Object.values(manualArtworkCatalog.games[0].catalogMetadata.locales)) {
+    metadata.artworkUrl =
+      `https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/${provenance.gameId}/cover.png`;
+  }
+  fs.writeFileSync(
+    manualArtworkCatalogPath,
+    serializeJson(manualArtworkCatalog),
+    "utf8",
+  );
+  const manualArtworkProvenance = {
+    ...provenance,
+    candidateCatalogSha256: sha256File(manualArtworkCatalogPath),
+  };
+  const manualArtworkProvenancePath = path.join(
+    tempDir,
+    "manual-artwork-publication.provenance.json",
+  );
+  fs.writeFileSync(
+    manualArtworkProvenancePath,
+    serializeJson(manualArtworkProvenance),
+    "utf8",
+  );
+  const manualArtworkErrors = authorizePublication({
+    catalogPath: manualArtworkCatalogPath,
+    baselinePath: BASELINE_PATH,
+    provenancePath: manualArtworkProvenancePath,
+    channelsDir,
+    packagePath: PACKAGE_PATH,
+    trustStorePath: DEFAULT_TRUST_STORE_PATH,
+  });
+  if (errorCodes(manualArtworkErrors).has("artwork-provenance-required")) {
+    pass("new publication cannot smuggle a manually maintained artworkUrl without game-owned artwork provenance");
+  } else {
+    fail("manual artworkUrl without package-derived provenance must be rejected");
+  }
+
   const artworkProvenancePath = path.join(tempDir, "artwork-publication.provenance.json");
   const artworkProvenance = {
     ...provenance,
