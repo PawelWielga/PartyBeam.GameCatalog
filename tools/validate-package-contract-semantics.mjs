@@ -96,6 +96,72 @@ try {
     "manifest schema requires exactly one component of each MVP kind",
   );
 
+  const legacyCatalogArtwork = clone(baseCatalog);
+  for (const metadata of Object.values(legacyCatalogArtwork.games[0].catalogMetadata.locales)) {
+    metadata.artworkUrl =
+      "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.reflex/cover.png";
+  }
+  const legacyArtworkErrors = validateManifest(baseManifest, "legacy-catalog-artwork", {
+    catalog: legacyCatalogArtwork,
+  });
+  if (legacyArtworkErrors.length === 0) {
+    pass("legacy catalog artwork URLs remain valid for historical packages without artwork declarations");
+  } else {
+    fail(`legacy no-artwork package projection should remain valid: ${JSON.stringify(legacyArtworkErrors)}`);
+  }
+
+  const artworkOutsideCatalog = clone(baseManifest);
+  artworkOutsideCatalog.catalog.artwork = [
+    {
+      id: "cover",
+      kind: "cover",
+      artifactPath: "assets/cover.png",
+      sha256: "0".repeat(64),
+    },
+  ];
+  expectCode(
+    validateManifest(artworkOutsideCatalog, "artwork-outside-catalog"),
+    "manifest-invalid-artwork-path",
+    "catalog artwork must stay under the catalog package namespace",
+  );
+
+  const artworkCollision = clone(baseManifest);
+  artworkCollision.components[0].artifactPath = "catalog/cover.png";
+  artworkCollision.catalog.artwork = [
+    {
+      id: "cover",
+      kind: "cover",
+      artifactPath: "catalog/cover.png",
+      sha256: "0".repeat(64),
+    },
+  ];
+  expectCode(
+    validateManifest(artworkCollision, "artwork-component-collision"),
+    "manifest-duplicate-artwork-path",
+    "catalog artwork cannot collide with a component payload",
+  );
+
+  const multipleCovers = clone(baseManifest);
+  multipleCovers.catalog.artwork = [
+    {
+      id: "cover",
+      kind: "cover",
+      artifactPath: "catalog/cover.png",
+      sha256: "0".repeat(64),
+    },
+    {
+      id: "cover-alt",
+      kind: "cover",
+      artifactPath: "catalog/cover-alt.png",
+      sha256: "1".repeat(64),
+    },
+  ];
+  expectCode(
+    validateManifest(multipleCovers, "multiple-covers"),
+    "manifest-multiple-canonical-covers",
+    "manifest cannot declare more than one canonical cover",
+  );
+
   const wanWithoutCapability = clone(baseManifest);
   wanWithoutCapability.capabilities.optional = [];
   expectCode(

@@ -5,6 +5,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { catalogCoverUrl } from "./catalog-artwork.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -223,6 +224,7 @@ function validateCaseInsensitiveUnique(values, pathPrefix, code, label, errors) 
 function validateManifestSemantics(manifest, errors) {
   const componentIds = new Set();
   const artifactPaths = new Set();
+  const artifactPathsCaseInsensitive = new Set();
 
   for (const component of manifest.components) {
     if (componentIds.has(component.id)) {
@@ -246,6 +248,7 @@ function validateManifestSemantics(manifest, errors) {
       );
     }
     artifactPaths.add(component.artifactPath);
+    artifactPathsCaseInsensitive.add(component.artifactPath.toLowerCase());
 
     validateCaseInsensitiveUnique(
       component.runtimeLocales,
@@ -280,6 +283,55 @@ function validateManifestSemantics(manifest, errors) {
         ),
       );
     }
+  }
+
+  const artworkIds = new Set();
+  let canonicalCoverCount = 0;
+  for (const artwork of manifest.catalog.artwork ?? []) {
+    if (artworkIds.has(artwork.id)) {
+      errors.push(
+        issue(
+          "manifest-duplicate-artwork-id",
+          "/catalog/artwork",
+          `catalog artwork id '${artwork.id}' is declared more than once`,
+        ),
+      );
+    }
+    artworkIds.add(artwork.id);
+
+    if (!artwork.artifactPath.startsWith("catalog/")) {
+      errors.push(
+        issue(
+          "manifest-invalid-artwork-path",
+          `/catalog/artwork/${artwork.id}/artifactPath`,
+          "catalog artwork must use a safe package path under 'catalog/'",
+        ),
+      );
+    }
+
+    const normalizedPath = artwork.artifactPath.toLowerCase();
+    if (artifactPathsCaseInsensitive.has(normalizedPath)) {
+      errors.push(
+        issue(
+          "manifest-duplicate-artwork-path",
+          `/catalog/artwork/${artwork.id}/artifactPath`,
+          `catalog artwork path '${artwork.artifactPath}' collides with another package payload`,
+        ),
+      );
+    }
+    artifactPathsCaseInsensitive.add(normalizedPath);
+
+    if (artwork.kind === "cover") canonicalCoverCount += 1;
+  }
+
+  if (canonicalCoverCount > 1) {
+    errors.push(
+      issue(
+        "manifest-multiple-canonical-covers",
+        "/catalog/artwork",
+        "at most one catalog artwork item may use kind 'cover'",
+      ),
+    );
   }
 
   validateCaseInsensitiveUnique(
@@ -609,6 +661,8 @@ export function validatePackageProjection({
   );
 
   const englishMetadata = findLocalizedMetadata(manifest.catalog.localized, "en");
+  const canonicalCover = (manifest.catalog.artwork ?? []).find((artwork) => artwork.kind === "cover");
+  const expectedArtworkUrl = canonicalCover ? catalogCoverUrl(manifest.gameId) : null;
   for (const [locale, metadata] of Object.entries(game.catalogMetadata.locales)) {
     const localized = findLocalizedMetadata(manifest.catalog.localized, locale);
     const manifestMetadata = localized?.shortDescription?.trim() ? localized : englishMetadata;
@@ -637,6 +691,15 @@ export function validatePackageProjection({
       metadata.summary,
       manifestMetadata.shortDescription,
     );
+    if (expectedArtworkUrl) {
+      compareValue(
+        errors,
+        "projection-artwork-url",
+        `/catalogMetadata/locales/${locale}/artworkUrl`,
+        metadata.artworkUrl ?? null,
+        expectedArtworkUrl,
+      );
+    }
   }
 
   for (const component of manifest.components) {

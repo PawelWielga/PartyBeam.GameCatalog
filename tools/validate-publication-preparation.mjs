@@ -16,6 +16,10 @@ const PACKAGE_PATH = path.join(
 );
 const CATALOG_PATH = path.join(REPO_ROOT, "catalog/v1/catalog.json");
 const PUBLISHED_AT = "2026-09-14T08:00:00Z";
+const EXISTING_REFLEX_COVER_PATH = path.join(
+  REPO_ROOT,
+  "artwork/v1/partybeam.reflex/cover.png",
+);
 let failed = false;
 
 function pass(message) {
@@ -29,6 +33,28 @@ function fail(message) {
 
 function fileSha256(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+}
+
+function bytesSha256(bytes) {
+  return crypto.createHash("sha256").update(bytes).digest("hex");
+}
+
+function logicalPackageSha256(manifestSha256, components) {
+  const lines = [...components]
+    .sort((left, right) => (
+      left.artifactPath < right.artifactPath ? -1 : left.artifactPath > right.artifactPath ? 1 : 0
+    ))
+    .map(
+      (component) =>
+        `component:${component.kind}:${component.artifactPath}:${component.sha256.toLowerCase()}`,
+    );
+
+  return bytesSha256(Buffer.from([
+    "partybeam-package-content-v1",
+    `manifest:${manifestSha256.toLowerCase()}`,
+    ...lines,
+    "",
+  ].join("\n"), "utf8"));
 }
 
 function toBase64Url(bytes) {
@@ -154,6 +180,79 @@ try {
     pass("publication provenance binds the catalog, trust store and exact generated channel projections");
   } else {
     fail("publication candidate/provenance output is incomplete or misleading");
+  }
+
+  const artworkSourceRoot = path.join(tempDir, "game-build");
+  const artworkOutputRoot = path.join(tempDir, "artwork-candidate");
+  const artworkSourcePath = path.join(artworkSourceRoot, "catalog/cover.png");
+  fs.mkdirSync(path.dirname(artworkSourcePath), { recursive: true });
+  fs.copyFileSync(EXISTING_REFLEX_COVER_PATH, artworkSourcePath);
+
+  const artworkManifest = JSON.parse(
+    fs.readFileSync(path.join(PACKAGE_CONTRACT_DIR, "manifest.json"), "utf8"),
+  );
+  const coverBytes = fs.readFileSync(artworkSourcePath);
+  artworkManifest.catalog.artwork = [
+    {
+      id: "cover",
+      kind: "cover",
+      artifactPath: "catalog/cover.png",
+      sha256: bytesSha256(coverBytes),
+    },
+  ];
+  const artworkManifestText = `${JSON.stringify(artworkManifest, null, 2)}\n`;
+  const artworkManifestPath = path.join(tempDir, "artwork-manifest.json");
+  fs.writeFileSync(artworkManifestPath, artworkManifestText, "utf8");
+
+  const artworkManifestSha256 = bytesSha256(Buffer.from(artworkManifestText, "utf8"));
+  const artworkEnvelope = signPackageHash(
+    {
+      schemaVersion: 1,
+      manifestSha256: artworkManifestSha256,
+      packageSha256: logicalPackageSha256(artworkManifestSha256, artworkManifest.components),
+    },
+    secretKey,
+    keyId,
+  );
+  const artworkEnvelopePath = path.join(tempDir, "artwork-signature.json");
+  fs.writeFileSync(artworkEnvelopePath, `${JSON.stringify(artworkEnvelope, null, 2)}\n`, "utf8");
+
+  const artworkOutputPath = path.join(tempDir, "artwork-catalog.candidate.json");
+  const artworkProvenancePath = path.join(tempDir, "artwork-publication.provenance.json");
+  const artworkPrepared = preparePublication({
+    catalogPath: CATALOG_PATH,
+    manifestPath: artworkManifestPath,
+    signaturePath: artworkEnvelopePath,
+    packagePath: PACKAGE_PATH,
+    publishedAt: PUBLISHED_AT,
+    outputPath: artworkOutputPath,
+    provenancePath: artworkProvenancePath,
+    artworkSourceRoot,
+    artworkOutputDir: artworkOutputRoot,
+    trustStorePath,
+  });
+
+  const artworkGame = artworkPrepared.candidate.games.find(
+    (game) => game.gameId === "partybeam.reflex",
+  );
+  const expectedArtworkUrl =
+    "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.reflex/cover.png";
+  const generatedArtworkPath = path.join(
+    artworkOutputRoot,
+    "artwork/v1/partybeam.reflex/cover.png",
+  );
+  if (
+    artworkGame?.catalogMetadata.locales.en.artworkUrl === expectedArtworkUrl
+    && artworkGame.catalogMetadata.locales.pl.artworkUrl === expectedArtworkUrl
+    && artworkPrepared.provenance.catalogArtwork?.sha256 === bytesSha256(coverBytes)
+    && artworkPrepared.provenance.catalogArtwork?.sourceArtifactPath === "catalog/cover.png"
+    && artworkPrepared.provenance.catalogArtwork?.catalogPath === "artwork/v1/partybeam.reflex/cover.png"
+    && fs.existsSync(generatedArtworkPath)
+    && fileSha256(generatedArtworkPath) === bytesSha256(coverBytes)
+  ) {
+    pass("publication preparation derives and stages catalog artwork from the game-owned cover");
+  } else {
+    fail("publication preparation did not bind the game-owned cover to catalog output");
   }
 
   const preparedReflexTestEntry = prepared.channelDocuments.test.games.find(

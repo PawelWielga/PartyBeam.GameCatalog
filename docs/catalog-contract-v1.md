@@ -4,7 +4,7 @@ This document defines the semantics of `schemas/v1/catalog.schema.json` and the 
 
 ## Status
 
-Catalog v1 is aligned with the game-package v1 integrity/signature contract merged in `PawelWielga/PartyBeam.Platform` PR #19. The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
+Catalog v1 is aligned with the current game-package v1 contract through merged `PawelWielga/PartyBeam.Platform` PR #121. The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
 
 PartyBeam.Platform remains authoritative for the package format and cryptographic verification. Any upstream contract change must refresh the pinned schemas and projection fixtures before publication tooling is considered synchronized.
 
@@ -37,6 +37,7 @@ Changing title, artwork, supported languages or publisher display text does not 
 
 - `defaultLocale` selects the preferred catalog fallback;
 - `locales` contains localized title/summary plus optional official presentation references;
+- when a package declares a canonical `kind: "cover"` asset, every locale receives the deterministic GameCatalog `artworkUrl`;
 - `supportUrl` mirrors the verified manifest support destination when one is declared.
 
 For package v1, English (`en`) is required as the terminal catalog fallback. Publication validation checks that catalog locales agree with the verified manifest and that catalog summaries/titles do not contradict package author metadata.
@@ -156,9 +157,13 @@ Publication validation fails closed and currently enforces at least:
 19. Game Contract, players, topology, surfaces, locales, capabilities and standby/resume projection must agree with the manifest;
 20. localized title/summary and support URL projection must agree with package metadata;
 21. every manifest component `releaseVersion` must equal the exact package version;
-22. only publisher identities admitted by current official-catalog policy may be newly published.
+22. only publisher identities admitted by current official-catalog policy may be newly published;
+23. game-owned catalog artwork paths/IDs are unambiguous and at most one canonical cover is declared;
+24. a declared cover must be a verified PNG with exact 2:3 aspect ratio, at most 8 MiB, and bytes matching the SHA-256 in the signed manifest;
+25. cover publication deterministically targets `artwork/v1/<gameId>/cover.png` and the corresponding raw GitHub URL in every locale;
+26. PartyBeam's canonical full-package verifier must report the same declared cover identity/hash before final publication authorization.
 
-For signed packages, cryptographic ECDSA verification against the production trusted-key registry remains mandatory. First MVP unsigned official packages instead rely on the explicit integrity-only policy plus canonical full-package verification. Once upstream PR #19 is merged and available to publication tooling, GameCatalog should share/invoke that verifier rather than maintain a second independent cryptographic implementation.
+For signed packages, cryptographic ECDSA verification against the production trusted-key registry remains mandatory. First MVP unsigned official packages instead rely on the explicit integrity-only policy plus canonical full-package verification. GameCatalog invokes PartyBeam's canonical verifier for the complete container rather than implementing a second package extractor.
 
 ## Public URL stability
 

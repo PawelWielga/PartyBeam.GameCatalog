@@ -127,6 +127,78 @@ try {
     fail("unsigned canonical verification evidence is incorrect");
   }
 
+  const artworkProvenance = {
+    ...provenance,
+    catalogArtwork: {
+      id: "cover",
+      kind: "cover",
+      sourceArtifactPath: "catalog/cover.png",
+      catalogPath: "artwork/v1/partybeam.integrity-fixture/cover.png",
+      publicUrl:
+        "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.integrity-fixture/cover.png",
+      contentType: "image/png",
+      sizeBytes: 1234,
+      sha256: "3".repeat(64),
+      width: 1024,
+      height: 1536,
+    },
+  };
+  const artworkVerifierResult = {
+    ...verifierResult,
+    catalogArtwork: [
+      {
+        id: "cover",
+        kind: "cover",
+        artifactPath: "catalog/cover.png",
+        sha256: "3".repeat(64),
+      },
+    ],
+  };
+  const artworkFinalized = finalizeCanonicalVerification({
+    provenance: artworkProvenance,
+    packagePath: PACKAGE_PATH,
+    trustStore,
+    trustStorePath,
+    verifierResult: artworkVerifierResult,
+    verifierCommit: "4".repeat(40),
+    gameContractVersion: "1.0.0",
+    verifiedAt: "2026-09-21T12:10:00Z",
+  });
+  if (
+    artworkFinalized.fullPackageVerification === true
+    && artworkFinalized.catalogArtwork?.sha256 === "3".repeat(64)
+  ) {
+    pass("canonical verifier evidence binds the package-declared catalog cover");
+  } else {
+    fail("catalog cover was not preserved in canonical verification evidence");
+  }
+
+  let artworkMismatchRejected = false;
+  try {
+    finalizeCanonicalVerification({
+      provenance: artworkProvenance,
+      packagePath: PACKAGE_PATH,
+      trustStore,
+      trustStorePath,
+      verifierResult: {
+        ...artworkVerifierResult,
+        catalogArtwork: [
+          {
+            ...artworkVerifierResult.catalogArtwork[0],
+            sha256: "4".repeat(64),
+          },
+        ],
+      },
+      verifierCommit: "4".repeat(40),
+      gameContractVersion: "1.0.0",
+      verifiedAt: "2026-09-21T12:10:00Z",
+    });
+  } catch (error) {
+    artworkMismatchRejected = error.message.includes("catalog-cover identity");
+  }
+  if (artworkMismatchRejected) pass("canonical verifier cover mismatch fails closed");
+  else fail("mismatched canonical cover verification was accepted");
+
   let identityMismatchRejected = false;
   try {
     finalizeCanonicalVerification({

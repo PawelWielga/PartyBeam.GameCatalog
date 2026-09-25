@@ -123,6 +123,76 @@ try {
     fail(`missing fail-closed verification errors: ${[...blockedCodes].join(", ")}`);
   }
 
+  const manualArtworkCatalogPath = path.join(tempDir, "manual-artwork-catalog.json");
+  const manualArtworkCatalog = structuredClone(catalog);
+  for (const metadata of Object.values(manualArtworkCatalog.games[0].catalogMetadata.locales)) {
+    metadata.artworkUrl =
+      `https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/${provenance.gameId}/cover.png`;
+  }
+  fs.writeFileSync(
+    manualArtworkCatalogPath,
+    serializeJson(manualArtworkCatalog),
+    "utf8",
+  );
+  const manualArtworkProvenance = {
+    ...provenance,
+    candidateCatalogSha256: sha256File(manualArtworkCatalogPath),
+  };
+  const manualArtworkProvenancePath = path.join(
+    tempDir,
+    "manual-artwork-publication.provenance.json",
+  );
+  fs.writeFileSync(
+    manualArtworkProvenancePath,
+    serializeJson(manualArtworkProvenance),
+    "utf8",
+  );
+  const manualArtworkErrors = authorizePublication({
+    catalogPath: manualArtworkCatalogPath,
+    baselinePath: BASELINE_PATH,
+    provenancePath: manualArtworkProvenancePath,
+    channelsDir,
+    packagePath: PACKAGE_PATH,
+    trustStorePath: DEFAULT_TRUST_STORE_PATH,
+  });
+  if (errorCodes(manualArtworkErrors).has("artwork-provenance-required")) {
+    pass("new publication cannot smuggle a manually maintained artworkUrl without game-owned artwork provenance");
+  } else {
+    fail("manual artworkUrl without package-derived provenance must be rejected");
+  }
+
+  const artworkProvenancePath = path.join(tempDir, "artwork-publication.provenance.json");
+  const artworkProvenance = {
+    ...provenance,
+    catalogArtwork: {
+      id: "cover",
+      kind: "cover",
+      sourceArtifactPath: "catalog/cover.png",
+      catalogPath: `artwork/v1/${provenance.gameId}/cover.png`,
+      publicUrl:
+        `https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/${provenance.gameId}/cover.png`,
+      contentType: "image/png",
+      sizeBytes: 1234,
+      sha256: "a".repeat(64),
+      width: 1024,
+      height: 1536,
+    },
+  };
+  fs.writeFileSync(artworkProvenancePath, serializeJson(artworkProvenance), "utf8");
+  const missingArtworkErrors = authorizePublication({
+    catalogPath,
+    baselinePath: BASELINE_PATH,
+    provenancePath: artworkProvenancePath,
+    channelsDir,
+    packagePath: PACKAGE_PATH,
+    trustStorePath: DEFAULT_TRUST_STORE_PATH,
+  });
+  if (errorCodes(missingArtworkErrors).has("artwork-directory-missing")) {
+    pass("cover publication cannot pass authorization without the staged catalog artwork");
+  } else {
+    fail("cover publication must require the staged catalog artwork directory");
+  }
+
   provenance.componentPayloadsVerified = true;
   provenance.fullPackageVerification = true;
   fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");

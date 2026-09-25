@@ -2,7 +2,7 @@
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #56, pinned to canonical `main` commit `b0508d3815e67512ab71de746949cb9a37e444a6` in `schemas/upstream/partybeam/v1/source.json`.
+The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #121, pinned to canonical `main` commit `867546d31a71c2006054b58472a9714f3e9e5ec2` in `schemas/upstream/partybeam/v1/source.json`. This includes optional game-owned `catalog.artwork[]` payloads.
 
 ## Authority
 
@@ -14,7 +14,7 @@ Publication validation therefore checks separate layers:
 2. signed logical package identity: exact manifest hash, logical package hash and detached signature;
 3. publication trust: `keyId` must resolve to an active public key bound to the exact publisher identity;
 4. catalog projection equality: discovery/compatibility fields must agree with the verified manifest;
-5. full component payload verification: performed by PartyBeam's canonical `GamePackageVerifier` through `npm run verify-full-package`.
+5. full package-payload verification: performed by PartyBeam's canonical `GamePackageVerifier` through `npm run verify-full-package`, including every declared catalog-artwork payload.
 
 ## Integrity and signature mapping
 
@@ -118,7 +118,25 @@ Locale keys are matched case-insensitively, matching PartyBeam's validator. A lo
 
 A declared non-English catalog locale with missing/incomplete localized metadata falls back to English. An invalid optional `supportUrl` is ignored rather than converted into a blocking catalog error, matching PartyBeam's non-blocking warning semantics.
 
-Catalog-only presentation references such as artwork or description URLs may be added by the official publication layer, but they cannot alter signed runtime/security declarations.
+A canonical cover is no longer hand-maintained catalog metadata for new publications. When the manifest declares exactly one `catalog.artwork[]` item with `kind: "cover"`, publication tooling validates the game-owned PNG and projects the same deterministic `artworkUrl` into every catalog locale. Games without a declared cover remain valid and omit `artworkUrl`.
+
+### Catalog artwork mapping
+
+The initial cover flow is:
+
+```text
+game/build root: <manifest artworkPath, normally catalog/cover.png>
+        ↓ SHA-256 must equal manifest catalog.artwork[].sha256
+.partybeam: same declared artwork payload
+        ↓ canonical PartyBeam verifier checks packaged bytes
+GameCatalog: artwork/v1/<gameId>/cover.png
+        ↓
+catalogMetadata.locales[*].artworkUrl
+```
+
+GameCatalog accepts PNG covers only, requires an exact 2:3 aspect ratio, enforces an 8 MiB publication limit and recommends 1024×1536 pixels. The output filename is normalized to `cover.png` regardless of the source artifact path. Publication provenance binds source artifact path, output path, public URL, byte size, SHA-256 and dimensions.
+
+This keeps the game repository/package as the source of truth while GameCatalog owns only the public distribution copy needed before PartyBeam downloads the package.
 
 ## Validation tooling
 
@@ -141,11 +159,13 @@ It verifies:
 - required/optional capabilities and derived Internet access requirement;
 - standby/resume support;
 - localized title/summary and optional support URL projection/fallback;
-- exact component `releaseVersion` equality with package version.
+- exact component `releaseVersion` equality with package version;
+- catalog-artwork path/id uniqueness and canonical-cover cardinality;
+- deterministic cover URL projection when `kind: "cover"` is declared.
 
 `tools/verify-package-signature.mjs` separately performs the publication-side trusted-key ECDSA P-256/P1363 verification. Test keys are generated ephemerally and no private signing key is stored in this repository.
 
-PartyBeam's `GamePackageVerifier` remains canonical for **full package verification** because it receives and hashes the actual component payload bytes. GameCatalog will invoke/share that verifier once the `.partybeam` container/extraction boundary is defined instead of inventing a container layout.
+PartyBeam's `GamePackageVerifier` remains canonical for **full package verification** because it receives and hashes the actual component and catalog-artwork payload bytes. GameCatalog requires its machine-readable `catalogArtwork` result to match publication provenance before final authorization.
 
 ## CI status
 

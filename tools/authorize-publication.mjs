@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 import { generateChannelDocuments } from "./generate-channel-indexes.mjs";
+import { validatePublishedCatalogCover } from "./catalog-artwork.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 import { validatePublicationProvenanceObject } from "./publication-provenance.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
@@ -76,6 +77,7 @@ export function authorizePublication({
   provenancePath,
   channelsDir,
   packagePath,
+  artworkDir = null,
   trustStorePath = DEFAULT_TRUST_STORE_PATH,
 }) {
   const errors = [];
@@ -158,6 +160,39 @@ export function authorizePublication({
       ),
     );
     return errors;
+  }
+
+  const localizedCatalogMetadata = Object.entries(game.catalogMetadata.locales);
+  const catalogArtworkUrls = localizedCatalogMetadata
+    .map(([, metadata]) => metadata.artworkUrl)
+    .filter((value) => value !== undefined);
+
+  if (provenance.catalogArtwork) {
+    for (const [locale, metadata] of localizedCatalogMetadata) {
+      if (metadata.artworkUrl !== provenance.catalogArtwork.publicUrl) {
+        errors.push(
+          issue(
+            "artwork-url-catalog-mismatch",
+            `catalog locale '${locale}' does not point to the provenance-bound catalog cover URL`,
+          ),
+        );
+      }
+    }
+
+    for (const artworkError of validatePublishedCatalogCover({
+      metadata: provenance.catalogArtwork,
+      gameId: provenance.gameId,
+      artworkRoot: artworkDir,
+    })) {
+      errors.push(issue(artworkError.code, artworkError.message));
+    }
+  } else if (catalogArtworkUrls.length > 0) {
+    errors.push(
+      issue(
+        "artwork-provenance-required",
+        "new publication metadata must not expose artworkUrl unless it was derived from provenance-bound game-owned artwork",
+      ),
+    );
   }
 
   if (game.publisher.id !== provenance.publisherId) {
@@ -279,6 +314,7 @@ function parseArgs(argv) {
     else if (value === "--provenance") options.provenancePath = path.resolve(argv[++index]);
     else if (value === "--channels-dir") options.channelsDir = path.resolve(argv[++index]);
     else if (value === "--package") options.packagePath = path.resolve(argv[++index]);
+    else if (value === "--artwork-dir") options.artworkDir = path.resolve(argv[++index]);
     else if (value === "--trust-store") options.trustStorePath = path.resolve(argv[++index]);
     else throw new Error(`Unknown argument: ${value}`);
   }
