@@ -96,6 +96,20 @@ try {
     "manifest schema requires exactly one component of each MVP kind",
   );
 
+  const legacyCatalogArtwork = clone(baseCatalog);
+  for (const metadata of Object.values(legacyCatalogArtwork.games[0].catalogMetadata.locales)) {
+    metadata.artworkUrl =
+      "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.reflex/cover.png";
+  }
+  const legacyArtworkErrors = validateManifest(baseManifest, "legacy-catalog-artwork", {
+    catalog: legacyCatalogArtwork,
+  });
+  if (legacyArtworkErrors.length === 0) {
+    pass("legacy catalog artwork URLs remain valid for historical packages without artwork declarations");
+  } else {
+    fail(`legacy no-artwork package projection should remain valid: ${JSON.stringify(legacyArtworkErrors)}`);
+  }
+
   const artworkOutsideCatalog = clone(baseManifest);
   artworkOutsideCatalog.catalog.artwork = [
     {
