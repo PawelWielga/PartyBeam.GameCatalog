@@ -14,11 +14,13 @@
         "locales": {
           "en": {
             "title": "Grimcellar",
-            "summary": "Explore an endless dungeon together on one shared screen."
+            "summary": "Explore an endless dungeon together on one shared screen.",
+            "artworkUrl": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.grimcellar/cover.png"
           },
           "pl": {
             "title": "Grimcellar",
-            "summary": "Wspólnie przemierzajcie nieskończony loch na jednym ekranie."
+            "summary": "Wspólnie przemierzajcie nieskończony loch na jednym ekranie.",
+            "artworkUrl": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.grimcellar/cover.png"
           }
         }
       },
@@ -163,11 +165,13 @@
         "locales": {
           "en": {
             "title": "Reflex",
-            "summary": "A fast reaction game built to validate PartyBeam timing and local multiplayer."
+            "summary": "A fast reaction game built to validate PartyBeam timing and local multiplayer.",
+            "artworkUrl": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.reflex/cover.png"
           },
           "pl": {
             "title": "Reflex",
-            "summary": "Szybka gra refleksowa służąca do walidacji timingu i lokalnego multiplayera PartyBeam."
+            "summary": "Szybka gra refleksowa służąca do walidacji timingu i lokalnego multiplayera PartyBeam.",
+            "artworkUrl": "https://raw.githubusercontent.com/PawelWielga/PartyBeam.GameCatalog/main/artwork/v1/partybeam.reflex/cover.png"
           }
         }
       },
