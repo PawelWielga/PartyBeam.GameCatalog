@@ -102,6 +102,29 @@ export function finalizeCanonicalVerification({
   ) {
     throw new Error("Canonical verifier package identity does not match publication provenance");
   }
+
+  const verifiedCover = Array.isArray(verifierResult.catalogArtwork)
+    ? verifierResult.catalogArtwork.find((artwork) => artwork.kind === "cover") ?? null
+    : null;
+  if (Boolean(provenance.catalogArtwork) !== Boolean(verifiedCover)) {
+    throw new Error(
+      "Canonical verifier catalog-cover result does not match publication provenance",
+    );
+  }
+  if (
+    provenance.catalogArtwork
+    && (
+      verifiedCover.id !== provenance.catalogArtwork.id
+      || verifiedCover.kind !== provenance.catalogArtwork.kind
+      || verifiedCover.artifactPath !== provenance.catalogArtwork.sourceArtifactPath
+      || verifiedCover.sha256.toLowerCase() !== provenance.catalogArtwork.sha256
+    )
+  ) {
+    throw new Error(
+      "Canonical verifier catalog-cover identity does not match publication provenance",
+    );
+  }
+
   if (!/^[a-f0-9]{40}$/.test(verifierCommit)) {
     throw new Error("Canonical verifier commit must be a full Git commit SHA");
   }
@@ -123,8 +146,8 @@ export function finalizeCanonicalVerification({
       ...(trustedKey ? { keyId: trustedKey.keyId } : {}),
     },
     cryptographicVerificationNote: trustedKey
-      ? "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component payload hashes, logical package hash and trusted P-256 publisher signature."
-      : "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component payload hashes and logical package hash using the explicit First MVP unsigned-official profile. No publisher signature was present.",
+      ? "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component and declared catalog-artwork payload hashes, logical package hash and trusted P-256 publisher signature."
+      : "PartyBeam.PackageVerifier successfully verified the canonical container, manifest semantics, component and declared catalog-artwork payload hashes and logical package hash using the explicit First MVP unsigned-official profile. No publisher signature was present.",
   };
 
   const errors = validatePublicationProvenanceObject(finalized);
