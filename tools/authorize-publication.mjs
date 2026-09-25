@@ -162,8 +162,13 @@ export function authorizePublication({
     return errors;
   }
 
+  const localizedCatalogMetadata = Object.entries(game.catalogMetadata.locales);
+  const catalogArtworkUrls = localizedCatalogMetadata
+    .map(([, metadata]) => metadata.artworkUrl)
+    .filter((value) => value !== undefined);
+
   if (provenance.catalogArtwork) {
-    for (const [locale, metadata] of Object.entries(game.catalogMetadata.locales)) {
+    for (const [locale, metadata] of localizedCatalogMetadata) {
       if (metadata.artworkUrl !== provenance.catalogArtwork.publicUrl) {
         errors.push(
           issue(
@@ -181,6 +186,13 @@ export function authorizePublication({
     })) {
       errors.push(issue(artworkError.code, artworkError.message));
     }
+  } else if (catalogArtworkUrls.length > 0) {
+    errors.push(
+      issue(
+        "artwork-provenance-required",
+        "new publication metadata must not expose artworkUrl unless it was derived from provenance-bound game-owned artwork",
+      ),
+    );
   }
 
   if (game.publisher.id !== provenance.publisherId) {
