@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { generateChannelDocuments } from "./generate-channel-indexes.mjs";
+import { readCatalogCover, writeCatalogCover } from "./catalog-artwork.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 import { validatePackageProjection } from "./validate-package-projection.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
@@ -121,7 +122,7 @@ function findLocalizedMetadata(localized, locale) {
   return null;
 }
 
-function buildCatalogMetadata(manifest) {
+function buildCatalogMetadata(manifest, catalogArtwork = null) {
   const englishLocale = manifest.catalogLocales.find((locale) => locale.toLowerCase() === "en");
   const english = englishLocale
     ? findLocalizedMetadata(manifest.catalog.localized, englishLocale)
@@ -137,6 +138,7 @@ function buildCatalogMetadata(manifest) {
     locales[locale] = {
       title: source.title?.trim() || manifest.catalog.canonicalTitle,
       summary: source.shortDescription,
+      ...(catalogArtwork ? { artworkUrl: catalogArtwork.publicUrl } : {}),
     };
   }
 
@@ -243,7 +245,15 @@ function validateProvenance(provenance) {
   throw new Error(`Generated publication provenance is invalid: ${details}`);
 }
 
-function mergeRelease(baseCatalog, manifestBytes, manifest, envelope, packagePath, publishedAt) {
+function mergeRelease(
+  baseCatalog,
+  manifestBytes,
+  manifest,
+  envelope,
+  packagePath,
+  publishedAt,
+  catalogArtwork,
+) {
   const packageBytes = fs.readFileSync(packagePath);
   const fileName = path.basename(packagePath);
   const expectedFileName = `${manifest.gameId}-${manifest.version}.partybeam`;
@@ -303,7 +313,7 @@ function mergeRelease(baseCatalog, manifestBytes, manifest, envelope, packagePat
     }
 
     game.publisher.displayName = manifest.publisher.displayName;
-    game.catalogMetadata = buildCatalogMetadata(manifest);
+    game.catalogMetadata = buildCatalogMetadata(manifest, catalogArtwork);
     game.releases.push(release);
   } else {
     game = {
@@ -313,7 +323,7 @@ function mergeRelease(baseCatalog, manifestBytes, manifest, envelope, packagePat
         displayName: manifest.publisher.displayName,
         kind: "first-party",
       },
-      catalogMetadata: buildCatalogMetadata(manifest),
+      catalogMetadata: buildCatalogMetadata(manifest, catalogArtwork),
       releases: [release],
     };
     candidate.games.push(game);
@@ -348,6 +358,8 @@ export function preparePublication({
   outputPath,
   provenancePath = `${outputPath}.provenance.json`,
   channelsOutputDir = null,
+  artworkSourceRoot = null,
+  artworkOutputDir = null,
   trustStorePath = DEFAULT_TRUST_STORE_PATH,
   overwrite = false,
 }) {
@@ -381,6 +393,15 @@ export function preparePublication({
   const envelope = readJson(signaturePath);
   const packageContractSource = readJson(UPSTREAM_SOURCE_PATH);
   const trustStoreBytes = fs.readFileSync(trustStorePath);
+  const catalogCover = readCatalogCover({
+    manifest,
+    sourceRoot: artworkSourceRoot ?? path.dirname(manifestPath),
+  });
+  if (catalogCover && !artworkOutputDir) {
+    throw new Error(
+      "artworkOutputDir is required when the manifest declares a canonical catalog cover.",
+    );
+  }
 
   if (envelope.signature) {
     const signatureErrors = verifyPackageSignature({
@@ -402,6 +423,7 @@ export function preparePublication({
     envelope,
     packagePath,
     publishedAt,
+    catalogCover?.metadata ?? null,
   );
 
   const candidateText = serializeJson(prepared.candidate);
@@ -462,6 +484,7 @@ export function preparePublication({
       },
       manifestSha256: prepared.manifestSha256,
       packageSha256: prepared.packageSha256,
+      ...(catalogCover ? { catalogArtwork: catalogCover.metadata } : {}),
       ...(prepared.release.package.signature
         ? {
             signature: {
@@ -481,6 +504,14 @@ export function preparePublication({
 
     validateProvenance(provenance);
 
+    if (catalogCover) {
+      writeCatalogCover({
+        cover: catalogCover,
+        outputRoot: artworkOutputDir,
+        overwrite,
+      });
+    }
+
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
     fs.mkdirSync(path.dirname(provenancePath), { recursive: true });
     fs.writeFileSync(outputPath, candidateText, "utf8");
@@ -491,6 +522,7 @@ export function preparePublication({
       candidate: prepared.candidate,
       provenance,
       channelDocuments,
+      catalogArtwork: catalogCover?.metadata ?? null,
     };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
@@ -513,6 +545,8 @@ function parseArgs(argv) {
     else if (value === "--output") options.outputPath = path.resolve(argv[++index]);
     else if (value === "--provenance") options.provenancePath = path.resolve(argv[++index]);
     else if (value === "--channels-output-dir") options.channelsOutputDir = path.resolve(argv[++index]);
+    else if (value === "--artwork-source-root") options.artworkSourceRoot = path.resolve(argv[++index]);
+    else if (value === "--artwork-output-dir") options.artworkOutputDir = path.resolve(argv[++index]);
     else if (value === "--trust-store") options.trustStorePath = path.resolve(argv[++index]);
     else if (value === "--force") options.overwrite = true;
     else throw new Error(`Unknown argument: ${value}`);
