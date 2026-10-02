@@ -1,3 +1,4 @@
+import { computePackageSha256 as logicalPackageSha256 } from "@partybeam/game-sdk/package-v1";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -29,19 +30,6 @@ function fail(message) {
 
 function sha256(bytes) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
-}
-
-function logicalPackageSha256(manifestSha256, components) {
-  const lines = [...components]
-    .sort((left, right) => (left.artifactPath < right.artifactPath ? -1 : left.artifactPath > right.artifactPath ? 1 : 0))
-    .map((component) => `component:${component.kind}:${component.artifactPath}:${component.sha256.toLowerCase()}`);
-  const descriptor = [
-    "partybeam-package-content-v1",
-    `manifest:${manifestSha256}`,
-    ...lines,
-    "",
-  ].join("\n");
-  return sha256(Buffer.from(descriptor, "utf8"));
 }
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-contract-semantics-"));

@@ -1,3 +1,4 @@
+import { computePackageSha256 as logicalPackageSha256 } from "@partybeam/game-sdk/package-v1";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -6,6 +7,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { p256 } from "@noble/curves/nist.js";
 import { preparePublication } from "./prepare-publication.mjs";
+import { PACKAGE_CONTRACT_SOURCE } from "./package-contract-source.mjs";
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
@@ -37,24 +39,6 @@ function fileSha256(filePath) {
 
 function bytesSha256(bytes) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
-}
-
-function logicalPackageSha256(manifestSha256, components) {
-  const lines = [...components]
-    .sort((left, right) => (
-      left.artifactPath < right.artifactPath ? -1 : left.artifactPath > right.artifactPath ? 1 : 0
-    ))
-    .map(
-      (component) =>
-        `component:${component.kind}:${component.artifactPath}:${component.sha256.toLowerCase()}`,
-    );
-
-  return bytesSha256(Buffer.from([
-    "partybeam-package-content-v1",
-    `manifest:${manifestSha256.toLowerCase()}`,
-    ...lines,
-    "",
-  ].join("\n"), "utf8"));
 }
 
 function toBase64Url(bytes) {
@@ -160,6 +144,11 @@ try {
 
   const persistedCandidate = JSON.parse(fs.readFileSync(outputPath, "utf8"));
   const persistedProvenance = JSON.parse(fs.readFileSync(provenancePath, "utf8"));
+  if (JSON.stringify(persistedProvenance.partyBeamPackageContract) === JSON.stringify(PACKAGE_CONTRACT_SOURCE)) {
+    pass("new publication provenance identifies the exact SDK version, artifact and schema hashes");
+  } else {
+    fail("publication provenance must identify the pinned GameSdk contract");
+  }
   const discoveryPath = path.join(channelsOutputDir, "channels.json");
   const stablePath = path.join(channelsOutputDir, "channels/stable.json");
   const testPath = path.join(channelsOutputDir, "channels/test.json");

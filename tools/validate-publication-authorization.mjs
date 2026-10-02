@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { authorizePublication } from "./authorize-publication.mjs";
+import { validatePublicationProvenanceObject } from "./publication-provenance.mjs";
 import { generateChannelDocuments } from "./generate-channel-indexes.mjs";
 import { DEFAULT_TRUST_STORE_PATH } from "./verify-package-signature.mjs";
 
@@ -18,7 +19,7 @@ const PACKAGE_PATH = path.join(
 );
 const PACKAGE_CONTRACT_SOURCE_PATH = path.join(
   REPO_ROOT,
-  "schemas/upstream/partybeam/v1/source.json",
+  "vendor/gamesdk-source.json",
 );
 let failed = false;
 
@@ -103,6 +104,27 @@ try {
       "Synthetic authorization fixture: signature flag alone is intentionally insufficient for final publication.",
   };
   fs.writeFileSync(provenancePath, serializeJson(provenance), "utf8");
+
+  const historical = structuredClone(provenance);
+  historical.partyBeamPackageContract = {
+    repository: "PawelWielga/PartyBeam.Platform", pullRequest: 121, ref: "main",
+    commit: "867546d31a71c2006054b58472a9714f3e9e5ec2",
+  };
+  if (validatePublicationProvenanceObject(historical).length === 0) {
+    pass("historical Platform provenance remains valid under its original schema shape");
+  } else fail("historical Platform provenance must remain valid");
+
+  const wrongPin = structuredClone(provenance);
+  wrongPin.partyBeamPackageContract.sdkVersion = "0.1.0-alpha.999";
+  const wrongPinPath = path.join(tempDir, "wrong-contract-pin.json");
+  fs.writeFileSync(wrongPinPath, serializeJson(wrongPin));
+  const pinErrors = authorizePublication({
+    catalogPath, baselinePath: BASELINE_PATH, provenancePath: wrongPinPath,
+    channelsDir, packagePath: PACKAGE_PATH, trustStorePath: DEFAULT_TRUST_STORE_PATH,
+  });
+  if (errorCodes(pinErrors).has("package-contract-pin-mismatch")) {
+    pass("publication rejects provenance claiming a different SDK contract version");
+  } else fail("mismatched GameSdk pin must block publication");
 
   const blockedErrors = authorizePublication({
     catalogPath,

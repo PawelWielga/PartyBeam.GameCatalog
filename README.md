@@ -4,14 +4,14 @@ Public, GitHub-only catalog and distribution boundary for official PartyBeam gam
 
 This repository contains machine-readable catalog metadata and public compiled PartyBeam game release assets. Game source code remains in per-game repositories and does not need to be public.
 
-For the exact remaining work and execution order needed for the PartyBeam ecosystem First MVP, see [docs/first-mvp-roadmap.md](docs/first-mvp-roadmap.md). The current critical publication items are the unsigned-official First MVP verification profile, the Grimcellar Test-channel publication (#12), and then the real Reflex publication/end-to-end evidence (#7). Mandatory retained-key signing (#11) is Post-MVP.
+For the exact remaining work and execution order needed for the PartyBeam ecosystem First MVP, see [docs/first-mvp-roadmap.md](docs/first-mvp-roadmap.md). The original unsigned-official profile and initial Grimcellar publication are complete. Remaining publication work includes the GameSdk-produced Grimcellar preview.2 with game-owned cover (#25) and Reflex end-to-end evidence (#7). The architecture sequence proceeds to Platform/SDK convergence (GameSdk G09). Mandatory retained-key signing (#11) is Post-MVP.
 
 
 ## PartyBeam.GameSdk contract source
 
 `PartyBeam.GameCatalog` owns publication/distribution policy, but it does **not** own the PartyBeam game package contract.
 
-The accepted target is to consume a versioned contract from [PartyBeam.GameSdk](https://github.com/PawelWielga/PartyBeam.GameSdk). The current `schemas/upstream/partybeam/v1` Platform snapshot is migration-era infrastructure and must not become a second independently evolving source of truth.
+Validation consumes `@partybeam/game-sdk` `0.1.0-alpha.4`, packed from immutable source commit `ad06755e8d9c56394466eed14080a83f1535e535`. The exact npm artifact is committed in `vendor/`, installed through a local file dependency and integrity-pinned by the lockfile. There is no separately maintained Platform schema snapshot.
 
 Steady-state ownership:
 
@@ -62,7 +62,9 @@ schemas/
     channels.schema.json
     publication-provenance.schema.json
     publisher-trust-store.schema.json
-  upstream/partybeam/v1/
+vendor/
+  gamesdk-source.json
+  partybeam-game-sdk-0.1.0-alpha.4.tgz
 trust/
   v1/
     publisher-keys.json

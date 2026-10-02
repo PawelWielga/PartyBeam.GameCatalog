@@ -1,23 +1,17 @@
+import { computePackageSha256 as logicalPackageSha256 } from "@partybeam/game-sdk/package-v1";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { catalogCoverUrl } from "./catalog-artwork.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
+import { packageSchemaPath, PACKAGE_CONTRACT_LABEL } from "./package-contract-source.mjs";
 
-const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = path.resolve(TOOL_DIR, "..");
-const MANIFEST_SCHEMA_PATH = path.join(
-  REPO_ROOT,
-  "schemas/upstream/partybeam/v1/game-package-manifest.schema.json",
-);
-const SIGNATURE_SCHEMA_PATH = path.join(
-  REPO_ROOT,
-  "schemas/upstream/partybeam/v1/game-package-signature-envelope.schema.json",
-);
+const MANIFEST_SCHEMA_PATH = packageSchemaPath("manifest");
+const SIGNATURE_SCHEMA_PATH = packageSchemaPath("signature-envelope");
 const SIGNATURE_ALGORITHM = "ecdsa-p256-sha256-p1363";
 const INTERNET_ACCESS_CAPABILITY = "internetAccess";
 const REQUIRED_COMPONENT_KINDS = ["tv", "androidController"];
@@ -94,30 +88,6 @@ function commonRuntimeLocales(components) {
     }
   }
   return [...common.values()];
-}
-
-function compareOrdinal(left, right) {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function logicalPackageSha256(manifestSha256, components) {
-  const componentLines = [...components]
-    .sort((left, right) => compareOrdinal(left.artifactPath, right.artifactPath))
-    .map(
-      (component) =>
-        `component:${component.kind}:${component.artifactPath}:${component.sha256.toLowerCase()}`,
-    );
-
-  const descriptor = [
-    "partybeam-package-content-v1",
-    `manifest:${manifestSha256.toLowerCase()}`,
-    ...componentLines,
-    "",
-  ].join("\n");
-
-  return sha256(Buffer.from(descriptor, "utf8"));
 }
 
 function deriveInternetAccess(capabilities) {
@@ -742,6 +712,7 @@ function printErrors(errors) {
 }
 
 async function main() {
+  console.log(`Package contract: ${PACKAGE_CONTRACT_LABEL}`);
   const options = parseArgs(process.argv.slice(2));
   const errors = validatePackageProjection(options);
   if (errors.length > 0) {

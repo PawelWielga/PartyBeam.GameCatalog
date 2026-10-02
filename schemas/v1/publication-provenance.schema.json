@@ -193,31 +193,86 @@
       }
     },
     "partyBeamPackageContract": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "repository",
-        "pullRequest",
-        "ref",
-        "commit"
-      ],
-      "properties": {
-        "repository": {
-          "const": "PawelWielga/PartyBeam.Platform"
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "pullRequest",
+            "ref",
+            "commit"
+          ],
+          "properties": {
+            "repository": {
+              "const": "PawelWielga/PartyBeam.Platform"
+            },
+            "pullRequest": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "ref": {
+              "type": "string",
+              "minLength": 1
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            }
+          }
         },
-        "pullRequest": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "ref": {
-          "type": "string",
-          "minLength": 1
-        },
-        "commit": {
-          "type": "string",
-          "pattern": "^[a-f0-9]{40}$"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "commit",
+            "sdkPackage",
+            "sdkVersion",
+            "packageSchemaVersion",
+            "artifactSha256",
+            "schemaSha256"
+          ],
+          "properties": {
+            "repository": {
+              "const": "PawelWielga/PartyBeam.GameSdk"
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "sdkPackage": {
+              "const": "@partybeam/game-sdk"
+            },
+            "sdkVersion": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$"
+            },
+            "packageSchemaVersion": {
+              "const": 1
+            },
+            "artifactSha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "schemaSha256": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "manifest",
+                "signature-envelope"
+              ],
+              "properties": {
+                "manifest": {
+                  "$ref": "#/$defs/sha256"
+                },
+                "signature-envelope": {
+                  "$ref": "#/$defs/sha256"
+                }
+              }
+            }
+          }
         }
-      }
+      ]
     },
     "cryptographicSignatureVerified": {
       "type": "boolean"

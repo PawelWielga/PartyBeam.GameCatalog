@@ -193,7 +193,7 @@ The generated provenance includes:
 - exact manifest hash;
 - logical PartyBeam package hash;
 - publisher ID and optional signature algorithm/key ID;
-- pinned PartyBeam package-contract source commit;
+- pinned GameSdk package-contract version, source commit, artifact and schema hashes;
 - the requested publication timestamp;
 - explicit verification-state flags;
 - when a cover exists: its manifest source path, generated catalog path/URL, PNG dimensions, byte size and SHA-256.

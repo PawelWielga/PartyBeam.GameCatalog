@@ -239,7 +239,7 @@ const malformedManifestErrors = validatePackageProjection({
 });
 
 if (malformedManifestErrors.some((error) => error.code.startsWith("manifest-schema-"))) {
-  pass("malformed PartyBeam manifest is rejected by the pinned upstream schema");
+  pass("malformed PartyBeam manifest is rejected by the pinned GameSdk schema");
 } else {
   fail(`malformed PartyBeam manifest was not rejected\n${formatErrors(malformedManifestErrors)}`);
 }
@@ -251,7 +251,7 @@ const malformedSignatureErrors = validatePackageProjection({
 });
 
 if (malformedSignatureErrors.some((error) => error.code.startsWith("signature-schema-"))) {
-  pass("invalid PartyBeam signature envelope is rejected by the pinned upstream schema");
+  pass("invalid PartyBeam signature envelope is rejected by the pinned GameSdk schema");
 } else {
   fail(`invalid PartyBeam signature envelope was not rejected\n${formatErrors(malformedSignatureErrors)}`);
 }
