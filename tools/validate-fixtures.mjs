@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -167,6 +168,57 @@ if (validProjectionErrors.length === 0) {
   pass("catalog projection matches the signed package manifest/envelope metadata");
 } else {
   fail(`valid package projection was rejected\n${formatErrors(validProjectionErrors)}`);
+}
+
+// Exact-byte integrity must reject line-ending changes even when JSON values agree.
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "partybeam-fixture-bytes-"));
+try {
+  const manifestBytes = fs.readFileSync(projectionIdentity.manifestPath);
+  const manifestText = manifestBytes.toString("utf8");
+  if (manifestText.includes("\r") || !manifestText.endsWith("\n")) {
+    fail("package-contract manifest fixture must retain its committed LF bytes");
+  }
+  const crlfManifestPath = path.join(tempDir, "manifest.json");
+  fs.writeFileSync(crlfManifestPath, manifestText.replaceAll("\n", "\r\n"));
+  const crlfProjectionErrors = validatePackageProjection({
+    ...projectionIdentity,
+    catalogPath: projectionCatalogPath,
+    manifestPath: crlfManifestPath,
+  });
+  const expectedHashErrors = [
+    "projection-manifest-hash-envelope",
+    "projection-manifest-hash-catalog",
+    "projection-package-hash-envelope",
+    "projection-package-hash-catalog",
+  ];
+  if (
+    crlfProjectionErrors.length === expectedHashErrors.length
+    && expectedHashErrors.every((code) => crlfProjectionErrors.some((error) => error.code === code))
+  ) {
+    pass("CRLF rendition of the same manifest invalidates exact manifest and logical package hashes");
+  } else {
+    fail(`manifest line-ending mutation must fail only hash checks\n${formatErrors(crlfProjectionErrors)}`);
+  }
+
+  const mutatedPackagePath = path.join(tempDir, path.basename(INTEGRITY_PACKAGE));
+  const packageText = fs.readFileSync(INTEGRITY_PACKAGE, "utf8");
+  fs.writeFileSync(mutatedPackagePath, packageText.replaceAll("\n", "\r\n"));
+  const mutatedIntegrityErrors = verifyPackageIntegrity({
+    ...integrityIdentity,
+    catalogPath: path.join(INTEGRITY_DIR, "valid.catalog.json"),
+    packagePath: mutatedPackagePath,
+  });
+  if (
+    mutatedIntegrityErrors.length === 2
+    && mutatedIntegrityErrors.some((error) => error.code === "package-hash-mismatch")
+    && mutatedIntegrityErrors.some((error) => error.code === "package-size-mismatch")
+  ) {
+    pass("line-ending mutation of asset bytes invalidates the exact hash and size");
+  } else {
+    fail(`asset line-ending mutation must fail hash and size checks\n${formatErrors(mutatedIntegrityErrors)}`);
+  }
+} finally {
+  fs.rmSync(tempDir, { recursive: true, force: true });
 }
 
 const mismatchProjectionErrors = validatePackageProjection({

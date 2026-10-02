@@ -170,6 +170,21 @@ It verifies:
 
 PartyBeam's `GamePackageVerifier` remains canonical for **full package verification** because it receives and hashes the actual component and catalog-artwork payload bytes. GameCatalog requires its machine-readable `catalogArtwork` result to match publication provenance before final authorization.
 
+## Exact-byte test fixtures
+
+The checked-in `fixtures/v1/package-contract/manifest.json` uses UTF-8 with LF
+line endings, as required by `.gitattributes`. Its envelope and both catalog
+projections bind those exact bytes, including the trailing newline. The
+`fixtures/v1/integrity` catalog similarly binds the committed asset's exact
+bytes and length. These are synthetic validation fixtures; the example
+signature metadata is not a trusted cryptographic signature.
+
+`npm test` accepts the committed fixtures and rejects CRLF renditions of the
+same JSON/asset content. Never normalize a downloaded manifest or package
+before hashing it. This fixture repair does not change published releases or
+the package-v1 format; GameSdk conformance consumers must retain exact-byte
+fixture provenance when updating snapshots.
+
 ## CI status
 
 GitHub Actions are intentionally disabled until the planned self-hosted runner is configured. See `docs/ci-policy.md`.
