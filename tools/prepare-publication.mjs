@@ -1,3 +1,4 @@
+import { computePackageSha256 as logicalPackageSha256 } from "@partybeam/game-sdk/package-v1";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -11,6 +12,7 @@ import { readCatalogCover, writeCatalogCover } from "./catalog-artwork.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
 import { validatePackageProjection } from "./validate-package-projection.mjs";
 import { verifyPackageIntegrity } from "./verify-package-integrity.mjs";
+import { PACKAGE_CONTRACT_SOURCE } from "./package-contract-source.mjs";
 import {
   DEFAULT_TRUST_STORE_PATH,
   verifyPackageSignature,
@@ -18,10 +20,6 @@ import {
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
-const UPSTREAM_SOURCE_PATH = path.join(
-  REPO_ROOT,
-  "schemas/upstream/partybeam/v1/source.json",
-);
 const PROVENANCE_SCHEMA_PATH = path.join(
   REPO_ROOT,
   "schemas/v1/publication-provenance.schema.json",
@@ -50,27 +48,7 @@ function sha256Bytes(bytes) {
 }
 
 function compareOrdinal(left, right) {
-  if (left < right) return -1;
-  if (left > right) return 1;
-  return 0;
-}
-
-function logicalPackageSha256(manifestSha256, components) {
-  const lines = [...components]
-    .sort((left, right) => compareOrdinal(left.artifactPath, right.artifactPath))
-    .map(
-      (component) =>
-        `component:${component.kind}:${component.artifactPath}:${component.sha256.toLowerCase()}`,
-    );
-
-  const descriptor = [
-    "partybeam-package-content-v1",
-    `manifest:${manifestSha256.toLowerCase()}`,
-    ...lines,
-    "",
-  ].join("\n");
-
-  return sha256Bytes(Buffer.from(descriptor, "utf8"));
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function deriveInternetAccess(capabilities) {
@@ -391,7 +369,7 @@ export function preparePublication({
   const manifestBytes = fs.readFileSync(manifestPath);
   const manifest = JSON.parse(manifestBytes.toString("utf8"));
   const envelope = readJson(signaturePath);
-  const packageContractSource = readJson(UPSTREAM_SOURCE_PATH);
+  const packageContractSource = structuredClone(PACKAGE_CONTRACT_SOURCE);
   const trustStoreBytes = fs.readFileSync(trustStorePath);
   const catalogCover = readCatalogCover({
     manifest,

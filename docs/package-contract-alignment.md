@@ -1,11 +1,11 @@
 # PartyBeam package contract alignment
 
-> **Target ownership update (2026-10-02):** this document describes the current package-v1 alignment while migration issue #22 is open. The long-term canonical package contract moves to `PartyBeam.GameSdk`; the existing Platform commit snapshot remains a compatibility input only until GameSdk#3/#8 and GameCatalog#22 prove equivalent deterministic validation.
+> **Contract source (2026-10-02):** package-v1 schemas and descriptor primitives are consumed from pinned GameSdk alpha.4. Catalog/channel/provenance/trust policy remains Catalog-owned.
 
 
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
-The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #121, pinned to canonical `main` commit `867546d31a71c2006054b58472a9714f3e9e5ec2` in `schemas/upstream/partybeam/v1/source.json`. This includes optional game-owned `catalog.artwork[]` payloads.
+The source is SDK `0.1.0-alpha.4`, commit `ad06755e8d9c56394466eed14080a83f1535e535`, recorded in `vendor/gamesdk-source.json`. Both schemas were byte-identical to the prior Platform snapshot before its deletion. Optional game-owned `catalog.artwork[]`, unsigned-official integrity and historical releases retain the same contract. See [pinning and upgrade process](game-sdk-migration.md).
 
 ## Authority
 
@@ -97,7 +97,7 @@ The exact WAN `network.outboundAllowlist` stays in the verified manifest and is 
 
 ## Component and surface mapping
 
-Manifest schema v1 requires exactly one component of each kind:
+Manifest schema v1 requires TV and Android controller components; browser controller is optional and unique when supplied:
 
 - `tv` -> catalog surface `tv`;
 - `androidController` -> catalog surface `android`;
@@ -147,7 +147,7 @@ This keeps the game repository/package as the source of truth while GameCatalog 
 
 It verifies:
 
-- pinned upstream manifest and signature-envelope JSON Schemas;
+- pinned GameSdk manifest and signature-envelope JSON Schemas;
 - semantic component uniqueness/kind rules;
 - case-insensitive locale uniqueness/declaration rules;
 - WAN/internetAccess coupling and HTTPS destination safety;
@@ -193,6 +193,6 @@ All validation remains callable locally through deterministic repository scripts
 
 ## First MVP optional-signature profile
 
-The pinned Platform contract permits `signature.json` to omit the publisher `signature` member while retaining mandatory `manifestSha256` and `packageSha256`. GameCatalog mirrors that absence in catalog metadata and provenance with `cryptographicSignatureVerified: false`. If signature metadata is present, the existing trusted-key verification remains mandatory.
+The pinned GameSdk package-v1 contract permits `signature.json` to omit the publisher `signature` member while retaining mandatory `manifestSha256` and `packageSha256`. GameCatalog mirrors that absence in catalog metadata and provenance with `cryptographicSignatureVerified: false`. If signature metadata is present, the existing trusted-key verification remains mandatory.
 
 This profile applies only to official First MVP distribution and does not introduce arbitrary sideloading.

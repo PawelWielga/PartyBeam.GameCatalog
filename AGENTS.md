@@ -24,7 +24,7 @@ Before changing package/publication validation read:
 - Dihor.GameKit.Networking is unrelated to catalog/package publication and must remain product-neutral.
 - Game source/build logic remains in individual game repositories.
 
-Do not evolve copied Platform package schemas independently. Until GameSdk migration is complete, treat `schemas/upstream/partybeam/v1` as a pinned compatibility snapshot only.
+Consume package schemas and descriptor primitives from the pinned GameSdk dependency. Do not add copied Platform/package schemas here. Update vendor artifact, source metadata and lockfile together; run existing and SDK conformance tests before upgrading.
 
 ## Validation
 

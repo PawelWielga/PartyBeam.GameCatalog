@@ -8,7 +8,7 @@ import { finalizeCanonicalVerification } from "./verify-full-package.mjs";
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(TOOL_DIR, "..");
 const PACKAGE_PATH = path.join(REPO_ROOT, "fixtures/v1/assets/partybeam.integrity-fixture-0.1.0.partybeam");
-const CONTRACT_SOURCE_PATH = path.join(REPO_ROOT, "schemas/upstream/partybeam/v1/source.json");
+const CONTRACT_SOURCE_PATH = path.join(REPO_ROOT, "vendor/gamesdk-source.json");
 let failed = false;
 
 function sha256File(filePath) {

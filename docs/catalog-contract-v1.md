@@ -4,9 +4,9 @@ This document defines the semantics of `schemas/v1/catalog.schema.json` and the 
 
 ## Status
 
-Catalog v1 is aligned with the current game-package v1 contract through merged `PawelWielga/PartyBeam.Platform` PR #121. The upstream schema snapshot used by local publication validation is pinned under `schemas/upstream/partybeam/v1/` together with its source commit.
+Catalog v1 consumes package-v1 schemas and descriptor primitives from `@partybeam/game-sdk` `0.1.0-alpha.4`. `vendor/gamesdk-source.json` records the immutable SDK commit, packed artifact SHA-256 and exact schema hashes. Validation resolves schemas from the installed SDK offline.
 
-PartyBeam.Platform remains authoritative for the package format and cryptographic verification. Any upstream contract change must refresh the pinned schemas and projection fixtures before publication tooling is considered synchronized.
+GameSdk owns the versioned package contract. Platform retains installed execution/security policy and canonical full-package publication evidence; Catalog owns trust/publication policy. An SDK upgrade must update the artifact/lockfile/source pin together and pass the shared corpus plus existing historical projection/publication tests.
 
 The catalog must never weaken or override the package manifest/integrity envelope. When a publisher signature is present, it must also preserve and verify that signature projection.
 
@@ -149,7 +149,7 @@ Publication validation fails closed and currently enforces at least:
 11. catalog locale declarations must have matching catalog metadata;
 12. package URLs must be public GitHub Release assets owned by this distribution repository;
 13. actual `.partybeam` bytes must match `package.integrity.digest` and `sizeBytes` when supplied;
-14. `manifest.json` and `signature.json` must pass the pinned upstream PartyBeam v1 schemas;
+14. `manifest.json` and `signature.json` must pass the pinned GameSdk PartyBeam v1 schemas;
 15. exact manifest bytes must hash to both envelope and catalog `manifestSha256`;
 16. PartyBeam's deterministic logical descriptor must hash to both envelope and catalog `packageSha256`;
 17. when present, signature algorithm/key/value metadata must match the envelope;

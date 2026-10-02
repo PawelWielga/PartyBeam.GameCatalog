@@ -1,0 +1,12 @@
+{
+  "repository": "PawelWielga/PartyBeam.GameSdk",
+  "commit": "ad06755e8d9c56394466eed14080a83f1535e535",
+  "sdkPackage": "@partybeam/game-sdk",
+  "sdkVersion": "0.1.0-alpha.4",
+  "packageSchemaVersion": 1,
+  "artifactSha256": "c5840a66d0cef9abe155799fe18163bbc46b59c7e21fb2ef5f9743840f4d6b44",
+  "schemaSha256": {
+    "manifest": "8deb09413c0cb373b3e89f831ba2b690f7886d3dae54a542248d25f42fbcd9c8",
+    "signature-envelope": "6bb5017ebf2abd2715023253911f81637d66257edd4dc70dd3ff2fe75060e75c"
+  }
+}

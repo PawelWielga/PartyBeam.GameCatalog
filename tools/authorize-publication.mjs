@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
+import { PACKAGE_CONTRACT_SOURCE } from "./package-contract-source.mjs";
 import { generateChannelDocuments } from "./generate-channel-indexes.mjs";
 import { validatePublishedCatalogCover } from "./catalog-artwork.mjs";
 import { validateCatalogFile } from "./validate-catalog.mjs";
@@ -104,6 +106,11 @@ export function authorizePublication({
     return provenanceErrors.map((error) =>
       issue(error.code, `${error.instancePath}: ${error.message}`),
     );
+  }
+
+  if (provenance.partyBeamPackageContract.repository === "PawelWielga/PartyBeam.GameSdk"
+    && !isDeepStrictEqual(provenance.partyBeamPackageContract, PACKAGE_CONTRACT_SOURCE)) {
+    errors.push(issue("package-contract-pin-mismatch", "publication provenance does not match the pinned GameSdk contract"));
   }
 
   const catalog = readJson(catalogPath);

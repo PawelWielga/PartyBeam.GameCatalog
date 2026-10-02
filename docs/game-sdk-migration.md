@@ -1,23 +1,51 @@
-# GameSdk migration
+# GameSdk contract source
 
-## Decision
+GameCatalog consumes `@partybeam/game-sdk` **0.1.0-alpha.4**, package schema **v1**,
+from immutable commit `ad06755e8d9c56394466eed14080a83f1535e535`.
+`vendor/gamesdk-source.json` records the source, exact packed npm artifact hash
+and hashes of both installed schemas. The local file dependency and lockfile
+pin `vendor/partybeam-game-sdk-0.1.0-alpha.4.tgz`; validation requires neither
+GitHub access nor a neighboring checkout after dependencies are installed.
+The initial `npm ci` may fetch pinned Ajv/crypto dependencies from npm. Subsequent
+installation works with `npm ci --offline` once those dependencies are cached.
 
-PartyBeam.GameCatalog will consume the versioned PartyBeam package contract from `PartyBeam.GameSdk`.
+## Ownership and compatibility
 
-The current Platform-pinned schema snapshot exists because GameSdk did not previously exist. It is not the long-term source of truth.
+GameSdk owns manifest/envelope schemas, descriptor/hash primitives and the
+data-only conformance corpus. Catalog reads those exports from the installed
+package, without maintaining a separate schema snapshot or descriptor algorithm.
+Catalog retains catalog/channel/provenance/trust schemas, semantic projection
+checks, publisher authorization and immutable public-release policy.
+Platform remains the independent canonical full-package verifier required by
+publication; this migration does not replace its evidence or execution policy.
 
-## Migration
+Both SDK schemas were byte-identical to the previous Platform snapshot.
+Existing fixture and publication tests run alongside the SDK corpus (58 manifest,
+15 envelope, 6 descriptor vectors and three generated-game fixtures). Existing
+published catalog metadata and release assets are not rewritten.
 
-1. GameSdk publishes/version-controls package v1 schemas and deterministic descriptor fixtures.
-2. GameCatalog pins an exact GameSdk contract version/artifact locally for deterministic offline validation.
-3. Run all existing valid/invalid catalog/package fixtures against the GameSdk contract.
-4. Preserve GameCatalog-owned catalog/channel/provenance/trust schemas.
-5. Update package-projection tooling to report the consumed GameSdk contract version.
-6. Remove the obsolete Platform commit/schema snapshot only after equivalent validation is proven.
+New provenance identifies SDK version, schema version, commit, artifact and
+schema hashes. Authorization rejects a mismatched SDK pin. The provenance schema
+also accepts the original Platform repository/PR/ref/commit shape for historical
+records, preserving its existing validation semantics. That historical record
+does not make Platform the current package-contract source.
 
-## Non-goals
+## Coordinated upgrade
 
-- do not move catalog/channel policy into GameSdk;
-- do not move publisher trust-store/publication authorization into GameSdk;
-- do not make GameCatalog depend on Platform implementation code;
-- do not change historical release semantics during extraction.
+1. Inspect the SDK version/commit, compatibility notes and real consumers.
+2. Use a clean LF checkout of that exact commit; run `npm pack --ignore-scripts`.
+   Commit the resulting npm artifact under `vendor/` and record its measured
+   SHA-256 and installed schema hashes in `gamesdk-source.json`.
+3. Update the local file dependency and npm lockfile together. Never edit the
+   artifact's schemas locally; fix/version the contract in GameSdk instead.
+4. Run `npm ci --ignore-scripts --no-audit --no-fund`, `npm test`,
+   `npm run validate`, `npm run validate-channels` and offline validation.
+   Module initialization verifies SDK version/artifact identity; schema loading
+   verifies measured hashes. Inconsistent pins fail closed.
+5. Prove historical release compatibility and canonical Platform verification
+   where behavior changes. Preserve already published release bytes and prior
+   provenance; adopt producer changes only under new release identities.
+
+GitHub Actions remain intentionally disabled by `ci-policy.md`. Local checks
+are mandatory; runtime/device E2E and G09 cross-validator convergence are
+separate acceptance gates.
