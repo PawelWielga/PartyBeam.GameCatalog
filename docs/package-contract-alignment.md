@@ -1,5 +1,8 @@
 # PartyBeam package contract alignment
 
+> **Target ownership update (2026-10-02):** this document describes the current package-v1 alignment while migration issue #22 is open. The long-term canonical package contract moves to `PartyBeam.GameSdk`; the existing Platform commit snapshot remains a compatibility input only until GameSdk#3/#8 and GameCatalog#22 prove equivalent deterministic validation.
+
+
 This document records how `PartyBeam.GameCatalog` v1 projects the signed PartyBeam game package contract.
 
 The current alignment target is merged `PawelWielga/PartyBeam.Platform` PR #121, pinned to canonical `main` commit `867546d31a71c2006054b58472a9714f3e9e5ec2` in `schemas/upstream/partybeam/v1/source.json`. This includes optional game-owned `catalog.artwork[]` payloads.
