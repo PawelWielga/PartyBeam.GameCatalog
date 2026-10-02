@@ -1,5 +1,8 @@
 # Upstream schema source
 
+> Target ownership update (2026-10-02): this pinned Platform snapshot is transitional. PartyBeam.GameSdk is the accepted long-term source for the versioned package contract. Remove this snapshot only after GameCatalog #22 proves equivalent offline validation.
+
+
 These schema files are a pinned local snapshot of the PartyBeam game package v1 contract so catalog publication validation can run deterministically without network access.
 
 Source repository: `PawelWielga/PartyBeam.Platform`
