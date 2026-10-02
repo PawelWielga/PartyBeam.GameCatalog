@@ -6,6 +6,21 @@ This repository contains machine-readable catalog metadata and public compiled P
 
 For the exact remaining work and execution order needed for the PartyBeam ecosystem First MVP, see [docs/first-mvp-roadmap.md](docs/first-mvp-roadmap.md). The current critical publication items are the unsigned-official First MVP verification profile, the Grimcellar Test-channel publication (#12), and then the real Reflex publication/end-to-end evidence (#7). Mandatory retained-key signing (#11) is Post-MVP.
 
+
+## PartyBeam.GameSdk contract source
+
+`PartyBeam.GameCatalog` owns publication/distribution policy, but it does **not** own the PartyBeam game package contract.
+
+The accepted target is to consume a versioned contract from [PartyBeam.GameSdk](https://github.com/PawelWielga/PartyBeam.GameSdk). The current `schemas/upstream/partybeam/v1` Platform snapshot is migration-era infrastructure and must not become a second independently evolving source of truth.
+
+Steady-state ownership:
+
+- `PartyBeam.GameSdk`: package manifest/signature schemas, deterministic package contract and producer/conformance tooling;
+- `PartyBeam.GameCatalog`: catalog/channel/provenance/trust schemas, immutable release metadata and publication policy;
+- `PartyBeam.Platform`: runtime execution/security policy and installed package consumption.
+
+See [GameSdk migration](docs/game-sdk-migration.md).
+
 ## Ownership boundary
 
 This repository owns:
