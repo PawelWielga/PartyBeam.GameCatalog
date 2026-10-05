@@ -60,6 +60,24 @@ function expectCode(errors, code, description) {
 }
 
 try {
+  for (const keyId of [" ", "\t\n", "\uFEFF", "\u2028"]) {
+    const envelope = clone(baseEnvelope);
+    envelope.signature.keyId = keyId;
+    const catalog = clone(baseCatalog);
+    catalog.games[0].releases[0].package.signature.keyId = keyId;
+    expectCode(validateManifest(baseManifest, "blank-signature-key", { catalog, envelope }),
+      "projection-signature-key-id", "SDK-blank signature key IDs fail even when catalog projection matches");
+  }
+  const nelEnvelope = clone(baseEnvelope);
+  nelEnvelope.signature.keyId = "\u0085";
+  const nelCatalog = clone(baseCatalog);
+  nelCatalog.games[0].releases[0].package.signature.keyId = "\u0085";
+  if (validateManifest(baseManifest, "sdk-nonblank-key", { catalog: nelCatalog, envelope: nelEnvelope }).length === 0) {
+    pass("NEL key identifier follows SDK trim semantics; projection acceptance does not prove publisher trust");
+  } else {
+    fail("SDK-nonblank NEL signature key projection was rejected");
+  }
+
   const duplicateComponent = clone(baseManifest);
   duplicateComponent.components[1].id = duplicateComponent.components[0].id;
   expectCode(

@@ -12,6 +12,7 @@
     "generate-channels": "node tools/generate-channel-indexes.mjs",
     "validate-channels": "node tools/validate-channel-indexes.mjs",
     "validate-package-projection": "node tools/validate-package-projection.mjs",
+    "validate-envelope-matrix": "node tools/validate-platform-envelope-proof.mjs",
     "verify-package": "node tools/verify-package-integrity.mjs",
     "verify-package-signature": "node tools/verify-package-signature.mjs",
     "prepare-publication": "node tools/prepare-publication.mjs",

@@ -49,3 +49,28 @@ does not make Platform the current package-contract source.
 GitHub Actions remain intentionally disabled by `ci-policy.md`. Local checks
 are mandatory; runtime/device E2E and G09 cross-validator convergence are
 separate acceptance gates.
+
+## G09 envelope matrix
+
+Platform exports the actual pinned SDK/.NET envelope test results through
+`PARTYBEAM_ENVELOPE_PROOF_PATH`; see its `docs/gamesdk-conformance.md`.
+After `npm ci --ignore-scripts --no-audit --no-fund`, consume that exact file:
+
+```powershell
+npm run validate-envelope-matrix -- ../PartyBeam.Platform/artifacts/envelope-matrix.json
+```
+
+The tool checks artifact identity, exact SDK manifest bytes and unique case IDs,
+recomputes SDK schema/metadata/canonical-encoding results and runs every case
+through the real Catalog projection gate. The initial matrix contains 115
+signed/unsigned field/type/hash/Base64/Unicode cases. All agree; 13 matching
+projections are accepted. The Catalog copy of signature metadata is aligned per
+schema-valid case, preventing unrelated projection differences from masking
+metadata defects. Real manifest/logical hash and canonical-encoding checks remain.
+
+This reproduced acceptance of whitespace-only signature key IDs even when both
+catalog and package agreed. Projection now follows SDK trim semantics; npm-test
+regressions include ordinary whitespace, FEFF and nonblank NEL. Canonical SDK
+definitions and generators are not copied into Catalog. The file is a test
+report, not publication authorization or a cryptographic attestation. Synthetic
+signatures do not establish payload integrity, publisher trust or device E2E.
