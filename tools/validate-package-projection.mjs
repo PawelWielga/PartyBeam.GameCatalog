@@ -119,6 +119,13 @@ function compareSet(errors, code, instancePath, actual, expected) {
 }
 
 function validateSignatureEncoding(signature, errors) {
+  if (signature.keyId.trim().length === 0) {
+    errors.push(issue(
+      "projection-signature-key-id",
+      "/signature/keyId",
+      "signature keyId cannot be whitespace (GameSdk metadata policy)",
+    ));
+  }
   const encoded = signature.valueBase64 ?? "";
   if (!/^[A-Za-z0-9+/]{86}==$/.test(encoded)) {
     errors.push(
